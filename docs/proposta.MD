@@ -10,7 +10,7 @@ Documento da Semana 1 do projeto da disciplina de Introdução a Algoritmos / Pr
 
 - Mario
 - Guilherme
-- Arthur Rodrigues
+- Matheus
 - Rafael
 
 ## 3. Tipo de jogo

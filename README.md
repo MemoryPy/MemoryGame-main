@@ -8,7 +8,7 @@ O jogador vira cartas em uma grade 4×4 e tenta encontrar todos os pares iguais 
 
 - Mario
 - Guilherme
-- Arthur Rodrigues
+- Matheus
 - Rafael
 
 ## Descrição do jogo
@@ -63,8 +63,8 @@ MemoryGame-main/
 ### 1. Clonar o repositório
 
 ```bash
-git clone https://github.com/MemoryPy/GameMemory.git
-cd GameMemory
+git clone https://github.com/MemoryPy/MemoryGame-main.git
+cd MemoryGame-main
 ```
 
 ### 2. Instalar as dependências
@@ -98,25 +98,30 @@ python -m pytest
 
 ## Assets externos
 
-Os recursos externos (imagens, fontes e sons) utilizados no projeto serão listados abaixo, com a devida indicação da fonte e licença.
+O protótipo atual desenha as cartas com formas geométricas e a fonte padrão do sistema, sem depender de recursos externos. Caso sejam adicionados imagens, fontes ou sons, eles serão listados abaixo com a devida indicação da fonte e licença.
 
 | Recurso | Tipo | Fonte / Autor | Licença |
 |---------|------|---------------|---------|
 | _(a preencher)_ | | | |
 | _(a preencher)_ | | | |
 
+## Status do desenvolvimento
+
+- ✅ **Semana 1 — Proposta e README:** documentação completa do jogo.
+- ✅ **Semana 2 — Protótipo executável:** janela Pygame, loop principal, grade 4×4, clique do mouse, lógica de pares, pontuação, temporizador, telas de vitória/derrota e recorde em arquivo.
+
 ## Checklist mínimo para entrega
 
-- [ ] README preenchido com nome final, descrição real, regras e controles do jogo.
-- [ ] `docs/proposta.MD` atualizado com a proposta do grupo.
-- [ ] Tabuleiro 4×4 com 8 pares embaralhados.
-- [ ] Revelação de duas cartas por clique e comparação de pares.
-- [ ] Sistema de pontuação e controle de tempo.
-- [ ] Telas de vitória e derrota.
-- [ ] Reinício com a tecla R e saída com ESC.
-- [ ] Registro do recorde em arquivo.
-- [ ] O jogo executa com `python main.py`.
-- [ ] Os testes passam com `pytest`.
+- [x] README preenchido com nome final, descrição real, regras e controles do jogo.
+- [x] `docs/proposta.MD` atualizado com a proposta do grupo.
+- [x] Tabuleiro 4×4 com 8 pares embaralhados.
+- [x] Revelação de duas cartas por clique e comparação de pares.
+- [x] Sistema de pontuação e controle de tempo.
+- [x] Telas de vitória e derrota.
+- [x] Reinício com a tecla R e saída com ESC.
+- [x] Registro do recorde em arquivo (`data/record.json`).
+- [x] O jogo executa com `python main.py`.
+- [x] Os testes passam com `pytest`.
 
 ## Observações para o grupo
 
