@@ -4,11 +4,11 @@ Esta pasta contém os módulos principais do jogo.
 
 ## Arquivos
 
-- `jogo.py`: loop principal, eventos, atualização e renderização.
-- `config.py`: constantes globais (tela, cores, caminhos, FPS).
-- `funcoes.py`: funções auxiliares de regra e lógica.
-- `sprites.py`: carregamento e recorte de spritesheet.
-- `dados.py`: leitura e gravação de dados (recorde/ranking).
+- `jogo.py`: loop principal, eventos, turnos de duas cartas, temporizador, telas de vitória/derrota e renderização.
+- `config.py`: constantes globais (tela, cores, grade 4×4, tempo, pontos e caminho do recorde).
+- `funcoes.py`: lógica do jogo em funções puras e testáveis (embaralhar, coordenadas, comparar par, pontuar, fim de jogo, recorde).
+- `sprites.py`: desenho das cartas (oculta/aberta/encontrada) e dos textos na tela.
+- `dados.py`: leitura e gravação do recorde em `data/record.json`.
 
 ## Dica de evolução
 
