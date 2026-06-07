@@ -1,0 +1,7 @@
+# Arquivos gerados pelo Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Arquivos de sistema
+.DS_Store
