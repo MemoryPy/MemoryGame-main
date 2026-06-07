@@ -1,3 +1,7 @@
+# Ambiente virtual
+.venv/
+venv/
+
 # Arquivos gerados pelo Python
 __pycache__/
 *.py[cod]

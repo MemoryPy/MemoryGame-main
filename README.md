@@ -46,6 +46,7 @@ MemoryGame-main/
 ├── main.py              # Ponto de entrada da aplicação
 ├── requirements.txt     # Dependências do projeto
 ├── README.md            # Este arquivo
+├── .gitignore           # Arquivos ignorados pelo Git
 ├── src/                 # Código-fonte principal do jogo
 │   ├── jogo.py          # Loop principal e controle de estados
 │   ├── config.py        # Configurações (tela, cores, tempo, caminhos)
@@ -67,13 +68,27 @@ git clone https://github.com/MemoryPy/MemoryGame-main.git
 cd MemoryGame-main
 ```
 
-### 2. Instalar as dependências
+### 2. Criar um ambiente virtual (recomendado)
+
+Isola as dependências do projeto e evita conflitos com o Python do sistema.
+
+```bash
+python -m venv .venv
+
+# Ativar no Linux/macOS:
+source .venv/bin/activate
+
+# Ativar no Windows (PowerShell):
+.venv\Scripts\Activate.ps1
+```
+
+### 3. Instalar as dependências
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. Executar o jogo
+### 4. Executar o jogo
 
 ```bash
 python main.py
@@ -84,6 +99,11 @@ python main.py
 ```bash
 python -m pytest
 ```
+
+## Observações de execução
+
+- Em alguns sistemas (Linux/macOS), use `python3` e `pip3` no lugar de `python` e `pip`.
+- No Linux com sessão Wayland, se aparecer o erro `pygame.error: windows not available`, rode o jogo assim: `SDL_VIDEODRIVER=x11 python main.py`.
 
 ## Conceitos da disciplina utilizados
 

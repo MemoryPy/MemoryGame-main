@@ -134,8 +134,32 @@ Escopo mínimo:
 
 ## 17. Possíveis melhorias, caso haja tempo
 
-Melhorias possíveis:
+Caso o grupo tenha tempo após concluir o escopo mínimo, pensamos em várias ideias para deixar o jogo mais completo e divertido. Elas estão organizadas por tema:
 
-- Melhoria 1: Tela inicial (menu) e tela de pausa.
-- Melhoria 2: Sons e animações ao revelar e combinar cartas.
-- Melhoria 3: Níveis de dificuldade (grades maiores, menos tempo) e ranking de jogadores.
+### Jogabilidade
+
+- Tela inicial (menu) com opções de jogar, ver recorde e sair, além de uma tela de pausa.
+- Níveis de dificuldade: grades maiores (4×6, 6×6) e tempo mais curto, com o número de pares ajustado automaticamente.
+- Modo dois jogadores, alternando turnos e contando os pares de cada um separadamente.
+- Sistema de dica: revela rapidamente um par ainda oculto em troca de pontos.
+- Combo/multiplicador: acertos seguidos valem cada vez mais pontos; um erro zera o combo.
+- Cartas especiais (curinga que combina com qualquer carta, bônus de tempo ou "embaralha tudo").
+
+### Visual e áudio
+
+- Animação de virar as cartas (efeito de flip) e um brilho ao formar um par.
+- Efeitos sonoros para acerto, erro e vitória, além de uma música de fundo.
+- Temas visuais alternáveis (paletas de cores diferentes, modo claro/escuro).
+- Usar imagens nas cartas (a partir da spritesheet) no lugar das letras.
+
+### Progressão e dados
+
+- Ranking com o nome do jogador salvo em JSON, exibindo as melhores partidas.
+- Estatísticas pessoais: melhor tempo, menor número de tentativas e total de partidas jogadas.
+- Conquistas/medalhas (por exemplo, "venceu sem errar" ou "venceu com mais de 30s sobrando").
+
+### Pontuação e feedback
+
+- Bônus de pontuação proporcional ao tempo restante no fim da partida.
+- Cálculo de precisão (porcentagem de acertos sobre o total de tentativas).
+- Tela de comemoração na vitória, mostrando pontos, tempo e se houve novo recorde.
