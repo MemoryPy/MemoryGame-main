@@ -31,6 +31,7 @@ from src.funcoes import (
 )
 from src.sprites import desenhar_carta, desenhar_texto
 from src.dados import carregar_recorde, salvar_recorde
+from src.tela_vitoria import desenhar_tela_vitoria
 
 
 def criar_tabuleiro():
@@ -74,6 +75,8 @@ def estado_inicial():
         "inicio": pygame.time.get_ticks(),
         "erro_em": None,             # momento em que duas cartas erradas viraram
         "situacao": "jogando",       # "jogando", "vitoria" ou "derrota"
+        "tempo_vitoria": 0,          # segundos gastos até vencer
+        "novo_recorde": False,       # True se esta partida bateu o recorde
     }
 
 
@@ -119,6 +122,7 @@ def avaliar_jogada(estado):
 
         if todos_pares_encontrados(estado["pares_encontrados"], NUMERO_PARES):
             estado["situacao"] = "vitoria"
+            estado["tempo_vitoria"] = TEMPO_LIMITE - ((pygame.time.get_ticks() - estado["inicio"]) // 1000)
     else:
         # Marca o instante do erro para esconder as cartas após a pausa.
         estado["erro_em"] = pygame.time.get_ticks()
@@ -224,6 +228,7 @@ def executar_jogo():
                 if eh_novo_recorde(estado["pontos"], recorde):
                     recorde = estado["pontos"]
                     salvar_recorde(CAMINHO_RECORDE, recorde)
+                    estado["novo_recorde"] = True
 
         # --- Renderização ---
         tela.fill(FUNDO)
@@ -231,7 +236,13 @@ def executar_jogo():
             desenhar_carta(tela, carta, fonte_carta)
         desenhar_placar(tela, estado, recorde, fonte_hud)
 
-        if estado["situacao"] != "jogando":
+        if estado["situacao"] == "vitoria":
+            desenhar_tela_vitoria(
+                tela, estado, recorde,
+                estado["novo_recorde"],
+                estado["tempo_vitoria"],
+            )
+        elif estado["situacao"] == "derrota":
             desenhar_fim(tela, estado, fonte_fim)
 
         pygame.display.flip()
