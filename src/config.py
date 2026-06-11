@@ -33,6 +33,10 @@ CARTA_ABERTA = (240, 240, 245)
 CARTA_ENCONTRADA = (120, 200, 140)
 TEXTO_CLARO = (235, 235, 245)
 TEXTO_CARTA = (40, 44, 70)
+BOTAO_FUNDO = (58, 64, 99)
+BOTAO_HOVER = (90, 100, 150)
+BOTAO_BORDA = (120, 130, 180)
+AMARELO = (255, 215, 80)
 
 # Símbolos usados nas cartas (um para cada par)
 SIMBOLOS = ["A", "B", "C", "D", "E", "F", "G", "H"]
