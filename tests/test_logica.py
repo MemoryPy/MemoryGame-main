@@ -5,6 +5,7 @@ from src.funcoes import (
     calcular_pontos,
     todos_pares_encontrados,
     eh_novo_recorde,
+    calcular_bonus_tempo,
 )
 from src.dados import salvar_recorde, carregar_recorde
 
@@ -40,7 +41,12 @@ def test_verificar_par_diferentes():
 def test_calcular_pontos():
     """Deve somar corretamente os pontos atuais com os pontos ganhos."""
     assert calcular_pontos(10, 5) == 15
-
+    
+def test_calcular_bonus_tempo():
+    """O bônus é o tempo restante multiplicado pelos pontos por segundo."""
+assert calcular_bonus_tempo(30, 2) == 60
+assert calcular_bonus_tempo(0, 2) == 0
+assert calcular_bonus_tempo(-5, 2) == 0  # segurança: tempo negativo não pontua
 
 def test_todos_pares_encontrados():
     """Deve indicar fim de jogo apenas quando todos os pares forem achados."""

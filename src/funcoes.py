@@ -28,6 +28,16 @@ def calcular_pontos(pontos_atual, pontos_ganhos):
     """Soma os pontos ganhos à pontuação atual."""
     return pontos_atual + pontos_ganhos
 
+def calcular_bonus_tempo(tempo_restante, pontos_por_segundo):
+    """Calcula o bônus de pontos pelo tempo que sobrou ao vencer.
+
+    Cada segundo restante vale 'pontos_por_segundo'. Tempo zero (ou
+    negativo, por segurança) não gera bônus.
+    """
+    if tempo_restante <= 0:
+        return 0
+    return tempo_restante * pontos_por_segundo
+
 
 def todos_pares_encontrados(pares_encontrados, numero_pares):
     """Verifica se o jogador já encontrou todos os pares do tabuleiro."""

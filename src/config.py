@@ -21,6 +21,7 @@ TEMPO_LIMITE = 60
 
 # Regras de pontuação e ritmo
 PONTOS_POR_PAR = 10
+PONTOS_POR_SEGUNDO = 2  # bônus por segundo restante ao vencer
 ATRASO_ERRO = 700  # tempo (ms) que duas cartas erradas ficam visíveis
 
 # Cores (R, G, B)

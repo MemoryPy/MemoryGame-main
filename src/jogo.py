@@ -20,12 +20,14 @@ from src.config import (
     CARTA_ENCONTRADA,
     CINZA,
     CAMINHO_RECORDE,
+    PONTOS_POR_SEGUNDO,
 )
 from src.funcoes import (
     criar_valores_embaralhados,
     indice_para_coordenada,
     verificar_par,
     calcular_pontos,
+    calcular_bonus_tempo,
     todos_pares_encontrados,
     eh_novo_recorde,
 )
@@ -71,6 +73,7 @@ def estado_inicial():
         "pares_encontrados": set(),  # conjunto de símbolos já combinados
         "tentativas": 0,
         "pontos": 0,
+        "bonus_tempo": 0,          # bônus ganho pelo tempo ao vencer
         "inicio": pygame.time.get_ticks(),
         "erro_em": None,             # momento em que duas cartas erradas viraram
         "situacao": "jogando",       # "jogando", "vitoria" ou "derrota"
@@ -220,7 +223,16 @@ def executar_jogo():
             if tempo_restante(estado) <= 0:
                 estado["situacao"] = "derrota"
 
+            if tempo_restante(estado) <= 0:
+                estado["situacao"] = "derrota"
+
             if estado["situacao"] == "vitoria":
+                bonus = calcular_bonus_tempo(
+                    tempo_restante(estado), PONTOS_POR_SEGUNDO
+                )
+                estado["bonus_tempo"] = bonus
+                estado["pontos"] = calcular_pontos(estado["pontos"], bonus)
+
                 if eh_novo_recorde(estado["pontos"], recorde):
                     recorde = estado["pontos"]
                     salvar_recorde(CAMINHO_RECORDE, recorde)
