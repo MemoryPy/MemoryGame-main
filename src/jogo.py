@@ -374,13 +374,12 @@ def executar_jogo():
 
             if situacao == "pausado":
                 desenhar_pausa(tela, fonte_titulo, fonte_botao, fonte_hud, mouse_pos)
-<<<<<<< HEAD
+
             elif situacao == "vitoria":
                 desenhar_tela_vitoria(tela, estado, recorde, estado["novo_recorde"], estado["tempo_vitoria"])
             elif situacao == "derrota":
-=======
             elif situacao in ("vitoria", "derrota"):
->>>>>>> dba245d65700314b4a3574c49a42f5bba14c2280
+
                 desenhar_fim(tela, estado, fonte_fim)
 
         pygame.display.flip()
