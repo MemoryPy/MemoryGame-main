@@ -49,10 +49,10 @@ SIMBOLOS = [
 # Níveis de dificuldade. Cada um define a grade (linhas x colunas), o tempo
 # em segundos e o rótulo exibido nos botões/placar.
 NIVEIS = {
-    "facil":   {"linhas": 4, "colunas": 4, "tempo": 90, "rotulo": "Facil"},
-    "medio":   {"linhas": 4, "colunas": 4, "tempo": 60, "rotulo": "Medio"},
-    "dificil": {"linhas": 4, "colunas": 6, "tempo": 60, "rotulo": "Dificil"},
-    "extremo": {"linhas": 6, "colunas": 6, "tempo": 45, "rotulo": "Extremo"},
+    "facil":   {"linhas": 4, "colunas": 4, "tempo": 90, "peso": 1, "rotulo": "Facil"},
+    "medio":   {"linhas": 4, "colunas": 4, "tempo": 60, "peso": 1, "rotulo": "Medio"},
+    "dificil": {"linhas": 4, "colunas": 6, "tempo": 60, "peso": 2, "rotulo": "Dificil"},
+    "extremo": {"linhas": 6, "colunas": 6, "tempo": 45, "peso": 3, "rotulo": "Extremo"},
 }
 NIVEL_PADRAO = "medio"
 
