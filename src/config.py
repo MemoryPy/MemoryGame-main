@@ -39,8 +39,22 @@ BOTAO_HOVER = (90, 100, 150)
 BOTAO_BORDA = (120, 130, 180)
 AMARELO = (255, 215, 80)
 
-# Símbolos usados nas cartas (um para cada par)
-SIMBOLOS = ["A", "B", "C", "D", "E", "F", "G", "H"]
+# Símbolos usados nas cartas (um para cada par).
+# Precisa ter pelo menos tantos quanto o maior número de pares (6x6 = 18).
+SIMBOLOS = [
+    "A", "B", "C", "D", "E", "F", "G", "H", "I",
+    "J", "K", "L", "M", "N", "O", "P", "Q", "R",
+]
+
+# Níveis de dificuldade. Cada um define a grade (linhas x colunas), o tempo
+# em segundos e o rótulo exibido nos botões/placar.
+NIVEIS = {
+    "facil":   {"linhas": 4, "colunas": 4, "tempo": 90, "rotulo": "Facil"},
+    "medio":   {"linhas": 4, "colunas": 4, "tempo": 60, "rotulo": "Medio"},
+    "dificil": {"linhas": 4, "colunas": 6, "tempo": 60, "rotulo": "Dificil"},
+    "extremo": {"linhas": 6, "colunas": 6, "tempo": 45, "rotulo": "Extremo"},
+}
+NIVEL_PADRAO = "medio"
 
 # Arquivo de recorde
 CAMINHO_RECORDE = "data/record.json"

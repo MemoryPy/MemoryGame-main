@@ -85,6 +85,11 @@ def estado_inicial():
         "erro_em": None,
         "situacao": "menu",      # "menu", "jogando", "pausado", "vitoria", "derrota"
 
+        "tempo_vitoria": 0,      # segundos restantes no momento da vitória
+        "novo_recorde": False,   # True se esta partida bateu o recorde
+
+    }
+
 
 # ---------------------------------------------------------------------------
 # Lógica de jogo
@@ -374,11 +379,9 @@ def executar_jogo():
 
             if situacao == "pausado":
                 desenhar_pausa(tela, fonte_titulo, fonte_botao, fonte_hud, mouse_pos)
-
             elif situacao == "vitoria":
                 desenhar_tela_vitoria(tela, estado, recorde, estado["novo_recorde"], estado["tempo_vitoria"])
             elif situacao == "derrota":
-            elif situacao in ("vitoria", "derrota"):
 
                 desenhar_fim(tela, estado, fonte_fim)
 
