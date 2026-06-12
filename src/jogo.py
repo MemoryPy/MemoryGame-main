@@ -33,7 +33,7 @@ from src.funcoes import (
     eh_novo_recorde,
 )
 from src.sprites import desenhar_carta, desenhar_texto
-from src.dados import carregar_recorde, salvar_recorde
+from src.dados import carregar_recordes, salvar_recordes
 from src.tela_vitoria import desenhar_tela_vitoria
 
 
@@ -94,6 +94,7 @@ def estado_inicial(nivel=NIVEL_PADRAO):
         "nivel": nivel,
         "numero_pares": (cfg["linhas"] * cfg["colunas"]) // 2,
         "tempo_limite": cfg["tempo"],
+        "peso": cfg["peso"],
         "selecionadas": [],
         "pares_encontrados": set(),
         "tentativas": 0,
@@ -176,7 +177,7 @@ def avaliar_jogada(estado):
         carta_a["encontrada"] = True
         carta_b["encontrada"] = True
         estado["pares_encontrados"].add(carta_a["valor"])
-        estado["pontos"] = calcular_pontos(estado["pontos"], PONTOS_POR_PAR)
+        estado["pontos"] = calcular_pontos(estado["pontos"], PONTOS_POR_PAR * estado["peso"])
         estado["selecionadas"] = []
 
         if todos_pares_encontrados(estado["pares_encontrados"], estado["numero_pares"]):
@@ -223,16 +224,14 @@ def _desenhar_botao(tela, texto, fonte, rect, mouse_pos):
 # Telas
 # ---------------------------------------------------------------------------
 
-def desenhar_menu(tela, recorde, fonte_titulo, fonte_botao, fonte_hud, mouse_pos):
+def desenhar_menu(tela, recordes, fonte_titulo, fonte_botao, fonte_hud, fonte_rec, mouse_pos):
     """Renderiza o menu inicial e devolve um dicionário com os rects clicáveis."""
     tela.fill(FUNDO)
 
     desenhar_texto(tela, "MemoryPy", fonte_titulo, AMARELO,
-                   (LARGURA_TELA // 2, 110))
+                   (LARGURA_TELA // 2, 100))
     desenhar_texto(tela, "Escolha a dificuldade", fonte_hud, CINZA,
-                   (LARGURA_TELA // 2, 165))
-    desenhar_texto(tela, f"Recorde: {recorde}", fonte_hud, TEXTO_CLARO,
-                   (LARGURA_TELA // 2, 205))
+                   (LARGURA_TELA // 2, 150))
 
     largura_btn, altura_btn = 180, 50
     cx = LARGURA_TELA // 2
@@ -240,10 +239,10 @@ def desenhar_menu(tela, recorde, fonte_titulo, fonte_botao, fonte_hud, mouse_pos
     x_dir = cx + 100
 
     posicoes = {
-        "facil":   (x_esq, 290),
-        "medio":   (x_dir, 290),
-        "dificil": (x_esq, 360),
-        "extremo": (x_dir, 360),
+        "facil":   (x_esq, 250),
+        "medio":   (x_dir, 250),
+        "dificil": (x_esq, 330),
+        "extremo": (x_dir, 330),
     }
 
     rects = {}
@@ -251,17 +250,18 @@ def desenhar_menu(tela, recorde, fonte_titulo, fonte_botao, fonte_hud, mouse_pos
         rect = pygame.Rect(0, 0, largura_btn, altura_btn)
         rect.center = (px, py)
         cfg = NIVEIS[nivel]
-        rotulo = f"{cfg['rotulo']} ({cfg['tempo']}s)"
-        _desenhar_botao(tela, rotulo, fonte_botao, rect, mouse_pos)
+        _desenhar_botao(tela, f"{cfg['rotulo']} ({cfg['tempo']}s)", fonte_botao, rect, mouse_pos)
+        rec = recordes.get(nivel, 0)
+        desenhar_texto(tela, f"Recorde: {rec}", fonte_rec, CINZA, (px, py + 36))
         rects[nivel] = rect
 
     rect_sair = pygame.Rect(0, 0, largura_btn, altura_btn)
-    rect_sair.center = (cx, 445)
+    rect_sair.center = (cx, 420)
     _desenhar_botao(tela, "Sair", fonte_botao, rect_sair, mouse_pos)
     rects["sair"] = rect_sair
 
     desenhar_texto(tela, "Durante o jogo:  P pausa   R reinicia   ESC sai",
-                   fonte_hud, CINZA, (LARGURA_TELA // 2, 520))
+                   fonte_hud, CINZA, (LARGURA_TELA // 2, 505))
 
     return rects
 
@@ -328,8 +328,9 @@ def executar_jogo():
     fonte_fim    = pygame.font.SysFont("arial", 40, bold=True)
     fonte_titulo = pygame.font.SysFont("arial", 64, bold=True)
     fonte_botao  = pygame.font.SysFont("arial", 24, bold=True)
+    fonte_rec    = pygame.font.SysFont("arial", 16)
 
-    recorde = carregar_recorde(CAMINHO_RECORDE)
+    recordes = carregar_recordes(CAMINHO_RECORDE)
     estado = estado_inicial(NIVEL_PADRAO)          # começa no menu
     fonte_carta = _fonte_carta(estado["tamanho_carta"])
 
@@ -367,7 +368,7 @@ def executar_jogo():
 
                 if situacao == "menu":
                     rects = desenhar_menu(
-                        tela, recorde, fonte_titulo, fonte_botao, fonte_hud, mouse_pos
+                        tela, recordes, fonte_titulo, fonte_botao, fonte_hud, fonte_rec, mouse_pos
                     )
                     clicou_nivel = False
                     for nivel in NIVEIS:
@@ -403,29 +404,31 @@ def executar_jogo():
             if estado["situacao"] == "vitoria":
                 bonus = calcular_bonus_tempo(
                     estado["tempo_vitoria"], PONTOS_POR_SEGUNDO
-                )
+                ) * estado["peso"]
                 estado["bonus_tempo"] = bonus
                 estado["pontos"] = calcular_pontos(estado["pontos"], bonus)
 
-                if eh_novo_recorde(estado["pontos"], recorde):
-                    recorde = estado["pontos"]
-                    salvar_recorde(CAMINHO_RECORDE, recorde)
+                nivel = estado["nivel"]
+                if eh_novo_recorde(estado["pontos"], recordes.get(nivel, 0)):
+                    recordes[nivel] = estado["pontos"]
+                    salvar_recordes(CAMINHO_RECORDE, recordes)
                     estado["novo_recorde"] = True
 
         # --- Renderização ---
         if situacao == "menu":
-            desenhar_menu(tela, recorde, fonte_titulo, fonte_botao, fonte_hud, mouse_pos)
+            desenhar_menu(tela, recordes, fonte_titulo, fonte_botao, fonte_hud, fonte_rec, mouse_pos)
 
         else:
             tela.fill(FUNDO)
             for carta in estado["tabuleiro"]:
                 desenhar_carta(tela, carta, fonte_carta)
-            desenhar_placar(tela, estado, recorde, fonte_hud)
+            recorde_nivel = recordes.get(estado["nivel"], 0)
+            desenhar_placar(tela, estado, recorde_nivel, fonte_hud)
 
             if situacao == "pausado":
                 desenhar_pausa(tela, fonte_titulo, fonte_botao, fonte_hud, mouse_pos)
             elif situacao == "vitoria":
-                desenhar_tela_vitoria(tela, estado, recorde, estado["novo_recorde"], estado["tempo_vitoria"])
+                desenhar_tela_vitoria(tela, estado, recorde_nivel, estado["novo_recorde"], estado["tempo_vitoria"])
             elif situacao == "derrota":
                 desenhar_fim(tela, estado, fonte_fim)
 
