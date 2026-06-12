@@ -21,6 +21,7 @@ TEMPO_LIMITE = 60
 
 # Regras de pontuação e ritmo
 PONTOS_POR_PAR = 10
+PONTOS_POR_SEGUNDO = 2  # bônus por segundo restante ao vencer
 ATRASO_ERRO = 700  # tempo (ms) que duas cartas erradas ficam visíveis
 
 # Cores (R, G, B)
@@ -38,8 +39,22 @@ BOTAO_HOVER = (90, 100, 150)
 BOTAO_BORDA = (120, 130, 180)
 AMARELO = (255, 215, 80)
 
-# Símbolos usados nas cartas (um para cada par)
-SIMBOLOS = ["A", "B", "C", "D", "E", "F", "G", "H"]
+# Símbolos usados nas cartas (um para cada par).
+# Precisa ter pelo menos tantos quanto o maior número de pares (6x6 = 18).
+SIMBOLOS = [
+    "A", "B", "C", "D", "E", "F", "G", "H", "I",
+    "J", "K", "L", "M", "N", "O", "P", "Q", "R",
+]
+
+# Níveis de dificuldade. Cada um define a grade (linhas x colunas), o tempo
+# em segundos e o rótulo exibido nos botões/placar.
+NIVEIS = {
+    "facil":   {"linhas": 4, "colunas": 4, "tempo": 90, "peso": 1, "rotulo": "Facil"},
+    "medio":   {"linhas": 4, "colunas": 4, "tempo": 60, "peso": 1, "rotulo": "Medio"},
+    "dificil": {"linhas": 4, "colunas": 6, "tempo": 60, "peso": 2, "rotulo": "Dificil"},
+    "extremo": {"linhas": 6, "colunas": 6, "tempo": 45, "peso": 3, "rotulo": "Extremo"},
+}
+NIVEL_PADRAO = "medio"
 
 # Arquivo de recorde
 CAMINHO_RECORDE = "data/record.json"

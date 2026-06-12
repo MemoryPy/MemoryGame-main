@@ -5,8 +5,9 @@ from src.funcoes import (
     calcular_pontos,
     todos_pares_encontrados,
     eh_novo_recorde,
+    calcular_bonus_tempo,
 )
-from src.dados import salvar_recorde, carregar_recorde
+from src.dados import salvar_recordes, carregar_recordes
 
 
 SIMBOLOS_TESTE = ["A", "B", "C", "D", "E", "F", "G", "H"]
@@ -40,7 +41,12 @@ def test_verificar_par_diferentes():
 def test_calcular_pontos():
     """Deve somar corretamente os pontos atuais com os pontos ganhos."""
     assert calcular_pontos(10, 5) == 15
-
+    
+def test_calcular_bonus_tempo():
+    """O bônus é o tempo restante multiplicado pelos pontos por segundo."""
+assert calcular_bonus_tempo(30, 2) == 60
+assert calcular_bonus_tempo(0, 2) == 0
+assert calcular_bonus_tempo(-5, 2) == 0  # segurança: tempo negativo não pontua
 
 def test_todos_pares_encontrados():
     """Deve indicar fim de jogo apenas quando todos os pares forem achados."""
@@ -54,14 +60,16 @@ def test_eh_novo_recorde():
     assert eh_novo_recorde(50, 50) is False
 
 
-def test_salvar_e_carregar_recorde(tmp_path):
-    """O recorde salvo em JSON deve ser lido de volta com o mesmo valor."""
+def test_salvar_e_carregar_recordes(tmp_path):
+    """Os recordes por nível salvos em JSON devem ser lidos de volta iguais."""
     caminho = tmp_path / "record.json"
-    salvar_recorde(str(caminho), 120)
-    assert carregar_recorde(str(caminho)) == 120
+    salvar_recordes(str(caminho), {"facil": 80, "extremo": 260})
+    recordes = carregar_recordes(str(caminho))
+    assert recordes["facil"] == 80
+    assert recordes["extremo"] == 260
 
 
-def test_carregar_recorde_inexistente(tmp_path):
-    """Quando não há arquivo de recorde, deve retornar 0."""
+def test_carregar_recordes_inexistente(tmp_path):
+    """Quando não há arquivo de recorde, deve retornar um dicionário vazio."""
     caminho = tmp_path / "nao_existe.json"
-    assert carregar_recorde(str(caminho)) == 0
+    assert carregar_recordes(str(caminho)) == {}
