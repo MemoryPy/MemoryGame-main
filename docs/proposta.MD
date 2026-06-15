@@ -163,3 +163,9 @@ Caso o grupo tenha tempo após concluir o escopo mínimo, pensamos em várias id
 - Bônus de pontuação proporcional ao tempo restante no fim da partida.
 - Cálculo de precisão (porcentagem de acertos sobre o total de tentativas).
 - Tela de comemoração na vitória, mostrando pontos, tempo e se houve novo recorde.
+
+> **Observação (atualização da Semana 3):** algumas dessas melhorias já foram
+> implementadas no jogo — o **menu inicial**, a **tela de pausa**, os **níveis de
+> dificuldade** (4×4, 4×6 e 6×6), o **bônus de pontuação pelo tempo restante** e a
+> **tela de comemoração na vitória** (com aviso de novo recorde). Os recordes
+> passaram a ser guardados **por nível** no arquivo `data/record.json`.
