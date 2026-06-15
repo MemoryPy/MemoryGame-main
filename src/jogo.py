@@ -273,12 +273,44 @@ def _desenhar_botao(tela, texto, fonte, rect, mouse_pos):
 # ---------------------------------------------------------------------------
 # As telas do jogo (menu, pausa, placar e derrota)
 # ---------------------------------------------------------------------------
+#
+# Para os botoes, separamos duas coisas:
+# - uma funcao "posicoes_botoes_..." que so calcula ONDE cada botao fica;
+# - a funcao "desenhar_..." que DESENHA usando essas posicoes.
+# Assim o loop principal pode descobrir onde o jogador clicou sem precisar
+# redesenhar a tela, e o codigo fica mais facil de entender.
+
+def posicoes_botoes_menu():
+    """Devolve um dicionario {nome_do_botao: area na tela} do menu.
+
+    As chaves sao os nomes dos niveis ('facil', 'medio'...) mais 'sair'.
+    """
+    largura_btn, altura_btn = 180, 50
+    cx = LARGURA_TELA // 2
+    x_esq = cx - 100
+    x_dir = cx + 100
+
+    centros = {
+        "facil":   (x_esq, 250),
+        "medio":   (x_dir, 250),
+        "dificil": (x_esq, 330),
+        "extremo": (x_dir, 330),
+        "sair":    (cx, 420),
+    }
+
+    rects = {}
+    for nome, (px, py) in centros.items():
+        rect = pygame.Rect(0, 0, largura_btn, altura_btn)
+        rect.center = (px, py)
+        rects[nome] = rect
+    return rects
+
 
 def desenhar_menu(tela, recordes, fonte_titulo, fonte_botao, fonte_hud, fonte_rec, mouse_pos):
-    """Desenha o menu inicial com os botoes de dificuldade e o de sair.
+    """Desenha o menu inicial: titulo, botoes de dificuldade e botao de sair.
 
-    Devolve um dicionario com a area (rect) de cada botao, para o loop
-    principal saber em qual deles o jogador clicou.
+    Tambem devolve as areas dos botoes (vindas de posicoes_botoes_menu),
+    caso o loop principal precise delas.
     """
     tela.fill(FUNDO)
 
@@ -287,32 +319,18 @@ def desenhar_menu(tela, recordes, fonte_titulo, fonte_botao, fonte_hud, fonte_re
     desenhar_texto(tela, "Escolha a dificuldade", fonte_hud, CINZA,
                    (LARGURA_TELA // 2, 150))
 
-    largura_btn, altura_btn = 180, 50
-    cx = LARGURA_TELA // 2
-    x_esq = cx - 100
-    x_dir = cx + 100
+    rects = posicoes_botoes_menu()
 
-    posicoes = {
-        "facil":   (x_esq, 250),
-        "medio":   (x_dir, 250),
-        "dificil": (x_esq, 330),
-        "extremo": (x_dir, 330),
-    }
-
-    rects = {}
-    for nivel, (px, py) in posicoes.items():
-        rect = pygame.Rect(0, 0, largura_btn, altura_btn)
-        rect.center = (px, py)
+    # Desenha um botao para cada nivel, com o recorde daquele nivel embaixo.
+    for nivel in NIVEIS:
+        rect = rects[nivel]
         cfg = NIVEIS[nivel]
         _desenhar_botao(tela, f"{cfg['rotulo']} ({cfg['tempo']}s)", fonte_botao, rect, mouse_pos)
         rec = recordes.get(nivel, 0)
-        desenhar_texto(tela, f"Recorde: {rec}", fonte_rec, CINZA, (px, py + 36))
-        rects[nivel] = rect
+        desenhar_texto(tela, f"Recorde: {rec}", fonte_rec, CINZA,
+                       (rect.centerx, rect.centery + 36))
 
-    rect_sair = pygame.Rect(0, 0, largura_btn, altura_btn)
-    rect_sair.center = (cx, 420)
-    _desenhar_botao(tela, "Sair", fonte_botao, rect_sair, mouse_pos)
-    rects["sair"] = rect_sair
+    _desenhar_botao(tela, "Sair", fonte_botao, rects["sair"], mouse_pos)
 
     desenhar_texto(tela, "Durante o jogo:  P pausa   R reinicia   ESC sai",
                    fonte_hud, CINZA, (LARGURA_TELA // 2, 505))
@@ -320,34 +338,44 @@ def desenhar_menu(tela, recordes, fonte_titulo, fonte_botao, fonte_hud, fonte_re
     return rects
 
 
+def posicoes_botoes_pausa():
+    """Devolve {nome_do_botao: area} dos botoes da tela de pausa.
+
+    As chaves sao 'retomar', 'menu' e 'sair'.
+    """
+    largura_btn, altura_btn = 220, 55
+    cx = LARGURA_TELA // 2
+
+    centros = {
+        "retomar": (cx, ALTURA_TELA // 2 - 20),
+        "menu":    (cx, ALTURA_TELA // 2 + 60),
+        "sair":    (cx, ALTURA_TELA // 2 + 140),
+    }
+
+    rects = {}
+    for nome, centro in centros.items():
+        rect = pygame.Rect(0, 0, largura_btn, altura_btn)
+        rect.center = centro
+        rects[nome] = rect
+    return rects
+
+
 def desenhar_pausa(tela, fonte_titulo, fonte_botao, fonte_hud, mouse_pos):
     """Desenha a tela de pausa com os botoes Retomar, Menu e Sair.
 
-    Tambem devolve a area de cada botao para o loop principal saber onde
-    o jogador clicou.
+    Tambem devolve as areas dos botoes (vindas de posicoes_botoes_pausa).
     """
     _overlay(tela, alpha=200)
 
     desenhar_texto(tela, "Pausado", fonte_titulo, AMARELO,
                    (LARGURA_TELA // 2, ALTURA_TELA // 2 - 120))
 
-    largura_btn, altura_btn = 220, 55
-    cx = LARGURA_TELA // 2
+    rects = posicoes_botoes_pausa()
+    _desenhar_botao(tela, "Retomar (P)", fonte_botao, rects["retomar"], mouse_pos)
+    _desenhar_botao(tela, "Menu", fonte_botao, rects["menu"], mouse_pos)
+    _desenhar_botao(tela, "Sair", fonte_botao, rects["sair"], mouse_pos)
 
-    rect_retomar = pygame.Rect(0, 0, largura_btn, altura_btn)
-    rect_retomar.center = (cx, ALTURA_TELA // 2 - 20)
-
-    rect_menu = pygame.Rect(0, 0, largura_btn, altura_btn)
-    rect_menu.center = (cx, ALTURA_TELA // 2 + 60)
-
-    rect_sair = pygame.Rect(0, 0, largura_btn, altura_btn)
-    rect_sair.center = (cx, ALTURA_TELA // 2 + 140)
-
-    _desenhar_botao(tela, "Retomar (P)", fonte_botao, rect_retomar, mouse_pos)
-    _desenhar_botao(tela, "Menu", fonte_botao, rect_menu, mouse_pos)
-    _desenhar_botao(tela, "Sair", fonte_botao, rect_sair, mouse_pos)
-
-    return rect_retomar, rect_menu, rect_sair
+    return rects
 
 
 def desenhar_placar(tela, estado, recorde, fonte_hud):
@@ -436,27 +464,23 @@ def executar_jogo():
             elif evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
 
                 if situacao == "menu":
-                    rects = desenhar_menu(
-                        tela, recordes, fonte_titulo, fonte_botao, fonte_hud, fonte_rec, mouse_pos
-                    )
-                    clicou_nivel = False
+                    # Descobre em qual botao do menu o jogador clicou.
+                    rects = posicoes_botoes_menu()
                     for nivel in NIVEIS:
                         if rects[nivel].collidepoint(mouse_pos):
                             estado, fonte_carta = iniciar_partida(nivel)
-                            clicou_nivel = True
                             break
-                    if not clicou_nivel and rects["sair"].collidepoint(mouse_pos):
+                    if rects["sair"].collidepoint(mouse_pos):
                         rodando = False
 
                 elif situacao == "pausado":
-                    rect_retomar, rect_menu, rect_sair = desenhar_pausa(
-                        tela, fonte_titulo, fonte_botao, fonte_hud, mouse_pos
-                    )
-                    if rect_retomar.collidepoint(mouse_pos):
+                    # Descobre qual botao da pausa o jogador clicou.
+                    rects = posicoes_botoes_pausa()
+                    if rects["retomar"].collidepoint(mouse_pos):
                         retomar(estado)
-                    elif rect_menu.collidepoint(mouse_pos):
+                    elif rects["menu"].collidepoint(mouse_pos):
                         estado = estado_inicial(NIVEL_PADRAO)
-                    elif rect_sair.collidepoint(mouse_pos):
+                    elif rects["sair"].collidepoint(mouse_pos):
                         rodando = False
 
                 elif situacao == "jogando":
