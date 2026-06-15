@@ -65,6 +65,16 @@ def _desenhar_estrela(tela, cx, cy, raio, cor):
 
 
 def desenhar_tela_vitoria(tela, estado, recorde, novo_recorde, tempo_gasto):
+    """
+    Renderiza a tela de comemoração de vitória sobre o tabuleiro.
+
+    Parâmetros:
+        tela         - surface do Pygame
+        estado       - dicionário do estado atual da partida
+        recorde      - valor do recorde (já atualizado se for novo)
+        novo_recorde - bool: True se esta partida bateu o recorde
+        tempo_gasto  - int: segundos que o jogador levou para vencer
+    """
     # --- Overlay escuro semi-transparente ---
     overlay = pygame.Surface((LARGURA_TELA, ALTURA_TELA), pygame.SRCALPHA)
     overlay.fill((10, 12, 25, 200))

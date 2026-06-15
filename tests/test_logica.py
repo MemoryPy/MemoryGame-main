@@ -44,9 +44,9 @@ def test_calcular_pontos():
     
 def test_calcular_bonus_tempo():
     """O bônus é o tempo restante multiplicado pelos pontos por segundo."""
-assert calcular_bonus_tempo(30, 2) == 60
-assert calcular_bonus_tempo(0, 2) == 0
-assert calcular_bonus_tempo(-5, 2) == 0  # segurança: tempo negativo não pontua
+    assert calcular_bonus_tempo(30, 2) == 60
+    assert calcular_bonus_tempo(0, 2) == 0
+    assert calcular_bonus_tempo(-5, 2) == 0  # segurança: tempo negativo não pontua
 
 def test_todos_pares_encontrados():
     """Deve indicar fim de jogo apenas quando todos os pares forem achados."""

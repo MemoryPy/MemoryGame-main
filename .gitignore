@@ -9,3 +9,6 @@ __pycache__/
 
 # Arquivos de sistema
 .DS_Store
+
+# Recorde gerado em tempo de execução (local de cada jogador)
+data/record.json
