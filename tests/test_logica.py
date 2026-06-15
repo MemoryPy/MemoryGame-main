@@ -1,3 +1,7 @@
+# Testes automaticos das funcoes de logica do jogo.
+# Cada funcao test_... checa se uma regra do jogo se comporta como esperado.
+# Para rodar todos de uma vez: python -m pytest
+
 from src.funcoes import (
     criar_valores_embaralhados,
     indice_para_coordenada,
@@ -10,6 +14,7 @@ from src.funcoes import (
 from src.dados import salvar_recordes, carregar_recordes
 
 
+# Lista de letras de exemplo (8 pares) usada em varios testes.
 SIMBOLOS_TESTE = ["A", "B", "C", "D", "E", "F", "G", "H"]
 
 
