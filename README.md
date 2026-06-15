@@ -243,8 +243,12 @@ O jogo **não utiliza recursos externos** (imagens, sons ou fontes de terceiros)
 
 Algumas ideias da seção 17 da proposta já foram implementadas (menu, pausa, níveis de dificuldade, bônus de tempo e tela de vitória). Para as próximas etapas, ainda podem ser adicionados: sons e animações ao virar e combinar cartas, temas visuais (modo claro/escuro), ranking com o nome do jogador e estatísticas pessoais (melhor tempo e número de tentativas).
 
-## Observações para o grupo
+## Decisões técnicas
 
-- Manter o código organizado em módulos pequenos e com responsabilidade clara.
-- Comentar as partes importantes da lógica, principalmente as regras do jogo.
-- Registrar decisões técnicas neste README ao longo do desenvolvimento.
+Algumas escolhas que o grupo fez durante o desenvolvimento e o motivo de cada uma:
+
+- **Separar lógica e visual:** as regras do jogo ficam em `funcoes.py` (sem Pygame) e o desenho em `sprites.py`/`tela_vitoria.py`. Isso deixa o código organizado e permite testar a lógica sem abrir a janela.
+- **Guardar tudo num "estado":** os dados que mudam durante a partida (cartas, pontos, tempo, situação) ficam num único dicionário. Assim, reiniciar a partida é só criar um estado novo.
+- **Recordes em JSON, por nível:** usamos `data/record.json` com um recorde para cada dificuldade, porque o JSON organiza bem os dados e aproveita o conceito de dicionário visto na disciplina.
+- **Tempo controlado por marcação, não por `sleep`:** a pausa entre cartas erradas e o cronômetro usam o relógio do Pygame em vez de travar o programa, para o jogo continuar respondendo.
+- **Cartas desenhadas com formas e letras:** optamos por não usar imagens externas, mantendo o jogo simples, leve e sem depender de arquivos de terceiros.
