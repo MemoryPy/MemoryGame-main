@@ -1,3 +1,8 @@
+# Este e o arquivo principal do jogo. Ele junta tudo: cria o tabuleiro,
+# controla o que acontece a cada clique e tecla, conta o tempo, decide
+# vitoria ou derrota e manda desenhar cada tela. A funcao executar_jogo()
+# la embaixo e o "motor" que fica rodando do inicio ao fim da partida.
+
 import pygame
 
 from src.config import (
@@ -37,34 +42,42 @@ from src.dados import carregar_recordes, salvar_recordes
 from src.tela_vitoria import desenhar_tela_vitoria
 
 
-# Margens da área do tabuleiro (usadas para calcular o tamanho das cartas)
+# Espaco em branco deixado nas bordas da area onde ficam as cartas.
 MARGEM_LATERAL = 40
 MARGEM_INFERIOR = 30
 
 
 # ---------------------------------------------------------------------------
-# Tabuleiro e estado
+# Montagem do tabuleiro e do estado da partida
 # ---------------------------------------------------------------------------
 
 def criar_tabuleiro(linhas, colunas):
-    """Cria as cartas de uma grade linhas x colunas, ajustando o tamanho das
-    cartas para caber na tela. Devolve (tabuleiro, tamanho_da_carta)."""
+    """Monta as cartas de uma grade do tamanho pedido.
+
+    Calcula o tamanho de carta que cabe na tela, embaralha as letras e cria
+    cada carta ja com sua posicao. Devolve a lista de cartas e o tamanho
+    de carta usado (para a fonte combinar com o tamanho).
+    """
+    # Espaco que sobra na tela para colocar as cartas (tirando as margens).
     largura_disp = LARGURA_TELA - 2 * MARGEM_LATERAL
     altura_disp = ALTURA_TELA - ESPACO_TOPO - MARGEM_INFERIOR
 
-    # Maior carta quadrada que cabe na grade, considerando as margens.
+    # Acha o maior tamanho de carta quadrada que ainda cabe na grade.
     carta_por_largura = (largura_disp - (colunas - 1) * MARGEM) / colunas
     carta_por_altura = (altura_disp - (linhas - 1) * MARGEM) / linhas
     tamanho = int(min(carta_por_largura, carta_por_altura))
 
+    # Centraliza a grade na tela calculando onde a primeira carta comeca.
     largura_grade = colunas * tamanho + (colunas - 1) * MARGEM
     altura_grade = linhas * tamanho + (linhas - 1) * MARGEM
     inicio_x = (LARGURA_TELA - largura_grade) // 2
     inicio_y = ESPACO_TOPO + (altura_disp - altura_grade) // 2
 
+    # Pega so as letras necessarias para o numero de pares deste tabuleiro.
     numero_pares = (linhas * colunas) // 2
     valores = criar_valores_embaralhados(SIMBOLOS[:numero_pares])
 
+    # Cria cada carta como um dicionario, ja na sua posicao na tela.
     tabuleiro = []
     for indice, valor in enumerate(valores):
         linha, coluna = indice_para_coordenada(indice, colunas)
@@ -84,7 +97,12 @@ def criar_tabuleiro(linhas, colunas):
 
 
 def estado_inicial(nivel=NIVEL_PADRAO):
-    """Devolve o estado de uma nova partida para o nível informado."""
+    """Cria o "estado" da partida: um dicionario que guarda tudo que muda
+    durante o jogo (cartas, pontos, tempo, situacao atual etc.).
+
+    Manter tudo num so dicionario facilita reiniciar a partida: basta criar
+    um estado novo. O jogo comeca na situacao "menu".
+    """
     cfg = NIVEIS[nivel]
     tabuleiro, tamanho = criar_tabuleiro(cfg["linhas"], cfg["colunas"])
 
@@ -111,12 +129,17 @@ def estado_inicial(nivel=NIVEL_PADRAO):
 
 
 def _fonte_carta(tamanho):
-    """Cria a fonte das cartas proporcional ao tamanho da carta."""
+    """Cria a fonte das letras das cartas, proporcional ao tamanho da carta
+    (cartas menores, no nivel extremo, usam letras menores)."""
     return pygame.font.SysFont("arial", max(20, int(tamanho * 0.55)), bold=True)
 
 
 def iniciar_partida(nivel):
-    """Inicia uma partida no nível dado e devolve (estado, fonte_carta)."""
+    """Comeca de fato uma partida no nivel escolhido.
+
+    Cria um estado novo, marca a situacao como "jogando" e zera o relogio.
+    Devolve tambem a fonte das cartas, que depende do tamanho da grade.
+    """
     estado = estado_inicial(nivel)
     estado["situacao"] = "jogando"
     estado["inicio"] = pygame.time.get_ticks()
@@ -124,23 +147,31 @@ def iniciar_partida(nivel):
 
 
 # ---------------------------------------------------------------------------
-# Lógica de jogo
+# Regras que acontecem durante a partida
 # ---------------------------------------------------------------------------
 
 def tempo_restante(estado):
-    """Calcula quantos segundos ainda restam, descontando o tempo em pausa."""
+    """Diz quantos segundos ainda faltam para acabar a partida.
+
+    Conta o tempo que passou desde o inicio, mas desconta o tempo em que o
+    jogo ficou pausado, para a pausa nao "roubar" tempo do jogador.
+    """
     decorrido = (pygame.time.get_ticks() - estado["inicio"] - estado["tempo_pausado"]) // 1000
     return max(0, estado["tempo_limite"] - decorrido)
 
 
 def pausar(estado):
-    """Registra o instante em que a pausa começou."""
+    """Pausa o jogo, anotando o momento em que a pausa comecou."""
     estado["inicio_pausa"] = pygame.time.get_ticks()
     estado["situacao"] = "pausado"
 
 
 def retomar(estado):
-    """Acumula o tempo que ficou pausado e volta a jogar."""
+    """Volta de uma pausa, somando quanto tempo o jogo ficou parado.
+
+    Esse tempo somado depois e descontado em tempo_restante, para o
+    cronometro continuar de onde parou.
+    """
     if estado["inicio_pausa"] is not None:
         estado["tempo_pausado"] += pygame.time.get_ticks() - estado["inicio_pausa"]
         estado["inicio_pausa"] = None
@@ -148,12 +179,17 @@ def retomar(estado):
 
 
 def tratar_clique(estado, posicao_mouse):
-    """Revela a carta clicada, respeitando as regras de turno."""
+    """Vira a carta que o jogador clicou.
+
+    Ignora o clique se ja existem duas cartas viradas (esperando comparacao)
+    ou se a carta clicada ja esta aberta. So vira cartas validas.
+    """
     if estado["erro_em"] is not None:
         return
     if len(estado["selecionadas"]) >= 2:
         return
 
+    # Procura entre as cartas qual delas o clique acertou.
     for indice, carta in enumerate(estado["tabuleiro"]):
         if carta["rect"].collidepoint(posicao_mouse):
             if carta["revelada"] or carta["encontrada"]:
@@ -164,7 +200,12 @@ def tratar_clique(estado, posicao_mouse):
 
 
 def avaliar_jogada(estado):
-    """Quando duas cartas estão viradas, verifica se formam um par."""
+    """Compara as duas cartas viradas e decide o que acontece.
+
+    Se forem iguais, viram um par (somam pontos e ficam abertas) e, se foi
+    o ultimo par, a partida e vencida. Se forem diferentes, marca o momento
+    para depois esconde-las de novo.
+    """
     if len(estado["selecionadas"]) != 2 or estado["erro_em"] is not None:
         return
 
@@ -188,7 +229,11 @@ def avaliar_jogada(estado):
 
 
 def atualizar_erro(estado):
-    """Após a pausa, vira de volta as duas cartas que não formaram par."""
+    """Esconde de novo as duas cartas erradas depois de um tempinho.
+
+    Quando o jogador erra, as cartas ficam visiveis por alguns instantes
+    (ATRASO_ERRO) para ele decorar onde estao, e so depois viram de volta.
+    """
     if estado["erro_em"] is None:
         return
     if pygame.time.get_ticks() - estado["erro_em"] >= ATRASO_ERRO:
@@ -199,11 +244,12 @@ def atualizar_erro(estado):
 
 
 # ---------------------------------------------------------------------------
-# Helpers de desenho
+# Pecas reutilizadas no desenho das telas
 # ---------------------------------------------------------------------------
 
 def _overlay(tela, alpha=180):
-    """Desenha um overlay escuro semi-transparente sobre a tela inteira."""
+    """Joga uma camada escura por cima da tela (usada em pausa e derrota)
+    para escurecer o fundo e destacar o texto que vem na frente."""
     fundo = pygame.Surface((LARGURA_TELA, ALTURA_TELA))
     fundo.set_alpha(alpha)
     fundo.fill((0, 0, 0))
@@ -211,7 +257,11 @@ def _overlay(tela, alpha=180):
 
 
 def _desenhar_botao(tela, texto, fonte, rect, mouse_pos):
-    """Desenha um botão e retorna True se o mouse estiver sobre ele."""
+    """Desenha um botao na tela e muda a cor quando o mouse passa por cima.
+
+    Devolve True se o mouse estiver em cima do botao, o que ajuda a saber
+    se ele foi clicado.
+    """
     hover = rect.collidepoint(mouse_pos)
     cor_fundo = BOTAO_HOVER if hover else BOTAO_FUNDO
     pygame.draw.rect(tela, cor_fundo, rect, border_radius=10)
@@ -221,11 +271,15 @@ def _desenhar_botao(tela, texto, fonte, rect, mouse_pos):
 
 
 # ---------------------------------------------------------------------------
-# Telas
+# As telas do jogo (menu, pausa, placar e derrota)
 # ---------------------------------------------------------------------------
 
 def desenhar_menu(tela, recordes, fonte_titulo, fonte_botao, fonte_hud, fonte_rec, mouse_pos):
-    """Renderiza o menu inicial e devolve um dicionário com os rects clicáveis."""
+    """Desenha o menu inicial com os botoes de dificuldade e o de sair.
+
+    Devolve um dicionario com a area (rect) de cada botao, para o loop
+    principal saber em qual deles o jogador clicou.
+    """
     tela.fill(FUNDO)
 
     desenhar_texto(tela, "MemoryPy", fonte_titulo, AMARELO,
@@ -267,7 +321,11 @@ def desenhar_menu(tela, recordes, fonte_titulo, fonte_botao, fonte_hud, fonte_re
 
 
 def desenhar_pausa(tela, fonte_titulo, fonte_botao, fonte_hud, mouse_pos):
-    """Renderiza o overlay de pausa e devolve os rects dos botões."""
+    """Desenha a tela de pausa com os botoes Retomar, Menu e Sair.
+
+    Tambem devolve a area de cada botao para o loop principal saber onde
+    o jogador clicou.
+    """
     _overlay(tela, alpha=200)
 
     desenhar_texto(tela, "Pausado", fonte_titulo, AMARELO,
@@ -293,7 +351,8 @@ def desenhar_pausa(tela, fonte_titulo, fonte_botao, fonte_hud, mouse_pos):
 
 
 def desenhar_placar(tela, estado, recorde, fonte_hud):
-    """Mostra tentativas, pontos, tempo e recorde no topo da tela."""
+    """Mostra na faixa de cima as informacoes da partida: tentativas,
+    pontos, tempo restante, recorde do nivel e os atalhos de teclado."""
     desenhar_texto(tela, f"Tentativas: {estado['tentativas']}", fonte_hud, TEXTO_CLARO, (120, 30))
     desenhar_texto(tela, f"Pontos: {estado['pontos']}", fonte_hud, TEXTO_CLARO, (340, 30))
     desenhar_texto(tela, f"Tempo: {tempo_restante(estado)}s", fonte_hud, TEXTO_CLARO, (520, 30))
@@ -305,7 +364,8 @@ def desenhar_placar(tela, estado, recorde, fonte_hud):
 
 
 def desenhar_fim(tela, estado, fonte_fim):
-    """Tela de derrota (tempo esgotado). A vitória usa desenhar_tela_vitoria."""
+    """Desenha a tela de derrota (quando o tempo acaba).
+    A tela de vitoria fica no arquivo tela_vitoria.py."""
     _overlay(tela)
     desenhar_texto(tela, "Tempo esgotado!", fonte_fim, CARTA_ENCONTRADA,
                    (LARGURA_TELA // 2, ALTURA_TELA // 2 - 20))
@@ -314,37 +374,45 @@ def desenhar_fim(tela, estado, fonte_fim):
 
 
 # ---------------------------------------------------------------------------
-# Loop principal
+# O motor do jogo (loop principal)
 # ---------------------------------------------------------------------------
 
 def executar_jogo():
-    """Inicializa o Pygame e executa o loop principal do jogo da memória."""
+    """Prepara tudo e roda o jogo do inicio ao fim.
+
+    Esta funcao faz o "loop principal": enquanto o jogo estiver aberto, ela
+    repete tres passos a cada quadro -> (1) ler o que o jogador fez (mouse e
+    teclado), (2) atualizar o estado da partida e (3) desenhar a tela.
+    """
     pygame.init()
     tela = pygame.display.set_mode((LARGURA_TELA, ALTURA_TELA))
     pygame.display.set_caption(TITULO_JOGO)
     relogio = pygame.time.Clock()
 
+    # Cria as fontes uma unica vez (e mais rapido do que criar a cada quadro).
     fonte_hud    = pygame.font.SysFont("arial", 22)
     fonte_fim    = pygame.font.SysFont("arial", 40, bold=True)
     fonte_titulo = pygame.font.SysFont("arial", 64, bold=True)
     fonte_botao  = pygame.font.SysFont("arial", 24, bold=True)
     fonte_rec    = pygame.font.SysFont("arial", 16)
 
+    # Carrega os recordes salvos e prepara o estado inicial (no menu).
     recordes = carregar_recordes(CAMINHO_RECORDE)
-    estado = estado_inicial(NIVEL_PADRAO)          # começa no menu
+    estado = estado_inicial(NIVEL_PADRAO)
     fonte_carta = _fonte_carta(estado["tamanho_carta"])
 
     rodando = True
     while rodando:
-        relogio.tick(FPS)
+        relogio.tick(FPS)                  # segura o jogo na velocidade certa
         mouse_pos = pygame.mouse.get_pos()
-        situacao = estado["situacao"]
+        situacao = estado["situacao"]      # em que tela/momento o jogo esta
 
-        # --- Eventos ---
+        # --- Passo 1: ler o que o jogador fez (teclado e mouse) ---
         for evento in pygame.event.get():
             if evento.type == pygame.QUIT:
                 rodando = False
 
+            # Teclas: ESC (pausa/sai), P (pausa), R (reinicia), M (menu).
             elif evento.type == pygame.KEYDOWN:
                 if evento.key == pygame.K_ESCAPE:
                     if situacao == "jogando":
@@ -362,8 +430,9 @@ def executar_jogo():
                     estado, fonte_carta = iniciar_partida(estado["nivel"])
 
                 elif evento.key == pygame.K_m and situacao in ("vitoria", "derrota", "pausado"):
-                    estado = estado_inicial(NIVEL_PADRAO)   # volta ao menu
+                    estado = estado_inicial(NIVEL_PADRAO)   # volta para o menu
 
+            # Clique do mouse: o efeito depende da tela em que estamos.
             elif evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
 
                 if situacao == "menu":
@@ -393,14 +462,17 @@ def executar_jogo():
                 elif situacao == "jogando":
                     tratar_clique(estado, mouse_pos)
 
-        # --- Atualização do estado ---
+        # --- Passo 2: atualizar a partida (so quando esta jogando) ---
         if situacao == "jogando":
-            avaliar_jogada(estado)
-            atualizar_erro(estado)
+            avaliar_jogada(estado)   # confere se as duas cartas formam par
+            atualizar_erro(estado)   # esconde de novo as cartas erradas
 
+            # Se o tempo zerou e ainda nao venceu, o jogador perde.
             if tempo_restante(estado) <= 0:
                 estado["situacao"] = "derrota"
 
+            # Se a jogada acima resultou em vitoria, calcula o bonus de tempo
+            # e, se for o caso, guarda o novo recorde do nivel.
             if estado["situacao"] == "vitoria":
                 bonus = calcular_bonus_tempo(
                     estado["tempo_vitoria"], PONTOS_POR_SEGUNDO
@@ -414,17 +486,19 @@ def executar_jogo():
                     salvar_recordes(CAMINHO_RECORDE, recordes)
                     estado["novo_recorde"] = True
 
-        # --- Renderização ---
+        # --- Passo 3: desenhar a tela conforme o momento do jogo ---
         if situacao == "menu":
             desenhar_menu(tela, recordes, fonte_titulo, fonte_botao, fonte_hud, fonte_rec, mouse_pos)
 
         else:
+            # Desenha o tabuleiro e o placar (vale para jogando/pausa/fim).
             tela.fill(FUNDO)
             for carta in estado["tabuleiro"]:
                 desenhar_carta(tela, carta, fonte_carta)
             recorde_nivel = recordes.get(estado["nivel"], 0)
             desenhar_placar(tela, estado, recorde_nivel, fonte_hud)
 
+            # Por cima do tabuleiro, mostra a tela extra conforme a situacao.
             if situacao == "pausado":
                 desenhar_pausa(tela, fonte_titulo, fonte_botao, fonte_hud, mouse_pos)
             elif situacao == "vitoria":
@@ -432,6 +506,8 @@ def executar_jogo():
             elif situacao == "derrota":
                 desenhar_fim(tela, estado, fonte_fim)
 
+        # Mostra na tela tudo o que foi desenhado neste quadro.
         pygame.display.flip()
 
+    # Saiu do loop: fecha a janela e encerra o pygame.
     pygame.quit()
