@@ -241,7 +241,7 @@ O jogo **não utiliza recursos externos** (imagens, sons ou fontes de terceiros)
 
 ## Possíveis melhorias
 
-Ideias planejadas para as próximas etapas (detalhadas na seção 17 da proposta): bônus de pontuação pelo tempo restante, tela de comemoração na vitória, menu inicial e pausa, sons e animações, níveis de dificuldade e ranking de jogadores.
+Algumas ideias da seção 17 da proposta já foram implementadas (menu, pausa, níveis de dificuldade, bônus de tempo e tela de vitória). Para as próximas etapas, ainda podem ser adicionados: sons e animações ao virar e combinar cartas, temas visuais (modo claro/escuro), ranking com o nome do jogador e estatísticas pessoais (melhor tempo e número de tentativas).
 
 ## Observações para o grupo
 
