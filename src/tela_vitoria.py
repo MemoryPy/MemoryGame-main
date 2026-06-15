@@ -1,19 +1,18 @@
+# Este arquivo desenha a tela que aparece quando o jogador vence: um painel
+# no meio da tela mostrando os pontos, o tempo, o recorde e umas estrelinhas
+# de comemoracao. E so parte visual, nao tem regra de jogo aqui.
+
 import pygame
 
 from src.config import (
     LARGURA_TELA,
     ALTURA_TELA,
-    FUNDO,
-    BRANCO,
     CINZA,
     CARTA_ENCONTRADA,
-    TEXTO_CLARO,
-    TEXTO_CARTA,
-    TEMPO_LIMITE,
 )
 
 
-# Cores extras usadas só nesta tela
+# Cores usadas so nesta tela (as outras vem do config.py).
 DOURADO = (255, 215, 60)
 DOURADO_ESCURO = (200, 160, 0)
 AZUL_CARD = (45, 50, 75)
@@ -23,14 +22,14 @@ LARANJA = (255, 160, 50)
 
 
 def _desenhar_texto(tela, texto, fonte, cor, centro):
-    """Utilitário interno: renderiza texto centralizado."""
+    """Escreve um texto centralizado (atalho usado varias vezes nesta tela)."""
     sup = fonte.render(texto, True, cor)
     ret = sup.get_rect(center=centro)
     tela.blit(sup, ret)
 
 
 def _desenhar_card(tela, x, y, largura, altura):
-    """Desenha um card arredondado com fundo semi-transparente."""
+    """Desenha o painel de fundo (caixa arredondada meio transparente)."""
     surf = pygame.Surface((largura, altura), pygame.SRCALPHA)
     pygame.draw.rect(surf, (*AZUL_CARD, 220), (0, 0, largura, altura), border_radius=14)
     pygame.draw.rect(surf, (*BORDA_CARD, 180), (0, 0, largura, altura), width=2, border_radius=14)
@@ -38,7 +37,7 @@ def _desenhar_card(tela, x, y, largura, altura):
 
 
 def _desenhar_estrelas(tela, cx, y, n=3):
-    """Desenha n estrelas douradas lado a lado, centradas em cx."""
+    """Desenha varias estrelas douradas lado a lado, so para enfeitar."""
     tamanho = 22
     espaco = 14
     total = n * tamanho + (n - 1) * espaco
@@ -50,7 +49,8 @@ def _desenhar_estrelas(tela, cx, y, n=3):
 
 
 def _desenhar_estrela(tela, cx, cy, raio, cor):
-    """Desenha uma estrela de 5 pontas."""
+    """Desenha uma unica estrela de 5 pontas usando um pouco de matematica
+    para achar as pontas em volta de um circulo."""
     import math
     pontos = []
     for i in range(10):
@@ -65,16 +65,12 @@ def _desenhar_estrela(tela, cx, cy, raio, cor):
 
 
 def desenhar_tela_vitoria(tela, estado, recorde, novo_recorde, tempo_gasto):
-    """
-    Renderiza a tela de comemoração de vitória sobre o tabuleiro.
+    """Desenha a tela de vitoria por cima do tabuleiro.
 
-    Parâmetros:
-        tela         - surface do Pygame
-        estado       - dicionário do estado atual da partida
-        recorde      - valor do recorde (já atualizado se for novo)
-        novo_recorde - bool: True se esta partida bateu o recorde
-        tempo_gasto  - int: segundos que o jogador levou para vencer
+    Recebe o estado da partida e os numeros a mostrar (recorde, se bateu
+    um novo recorde e o tempo usado) e monta o painel de comemoracao.
     """
+    # Escurece o tabuleiro atras, para destacar o painel de vitoria.
     # --- Overlay escuro semi-transparente ---
     overlay = pygame.Surface((LARGURA_TELA, ALTURA_TELA), pygame.SRCALPHA)
     overlay.fill((10, 12, 25, 200))
