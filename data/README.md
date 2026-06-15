@@ -1,12 +1,14 @@
 # Dados
 
-Esta pasta guarda arquivos de persistencia simples em texto.
+Esta pasta guarda os arquivos que o jogo precisa manter salvos entre uma
+partida e outra.
 
 ## Arquivos
 
-- `recorde.txt`: melhor pontuacao registrada.
-- `ranking.txt`: base para ranking de jogadores (opcional neste template).
-- `README.txt`: arquivo legado; manter por compatibilidade se necessario.
+- `record.json`: guarda o melhor recorde de cada nivel de dificuldade.
+  Ele e criado automaticamente quando o jogador vence uma partida e nao
+  vai para o repositorio (esta no `.gitignore`), porque o recorde e
+  pessoal de cada maquina.
 
 ## Observacao
 
