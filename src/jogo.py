@@ -16,19 +16,23 @@ from src.config import (
     PONTOS_POR_SEGUNDO,
     ATRASO_ERRO,
     SIMBOLOS,
+    SIMBOLOS_ESPECIAIS,
+    SIMBOLO_CURINGA,
+    SIMBOLO_BONUS_TEMPO,
+    SIMBOLO_EMBARALHA,
+    SEGUNDOS_BONUS_CARTA,
     NIVEIS,
     NIVEL_PADRAO,
-    FUNDO,
-    TEXTO_CLARO,
-    CARTA_ENCONTRADA,
-    CINZA,
     CAMINHO_RECORDE,
-    BOTAO_FUNDO,
-    BOTAO_HOVER,
-    BOTAO_BORDA,
-    AMARELO,
+    TAMANHO_RANKING,
+    TAMANHO_MAXIMO_NOME,
+    CUSTO_DICA,
+    DICAS_MAXIMAS,
+    DURACAO_DICA_MS,
+    TEMAS,
 )
 from src.funcoes import (
+    montar_simbolos_do_nivel,
     criar_valores_embaralhados,
     indice_para_coordenada,
     verificar_par,
@@ -36,10 +40,31 @@ from src.funcoes import (
     calcular_bonus_tempo,
     todos_pares_encontrados,
     eh_novo_recorde,
+    calcular_precisao,
+    atualizar_combo,
+    calcular_multiplicador_combo,
+    atualizar_estatisticas,
+    verificar_conquistas,
+    qualifica_para_ranking,
+    atualizar_ranking,
+    completar_par_bonus,
+    reembaralhar_ocultas,
 )
 from src.sprites import desenhar_carta, desenhar_texto
-from src.dados import carregar_recordes, salvar_recordes
-from src.tela_vitoria import desenhar_tela_vitoria
+from src.dados import (
+    carregar_recordes,
+    salvar_recordes,
+    carregar_estatisticas,
+    salvar_estatisticas,
+    carregar_ranking,
+    salvar_ranking,
+    carregar_conquistas,
+    salvar_conquistas,
+    carregar_preferencias,
+    salvar_preferencias,
+)
+from src.tela_vitoria import desenhar_tela_vitoria, desenhar_tela_vitoria_2p
+from src import audio
 
 
 # Espaco em branco deixado nas bordas da area onde ficam as cartas.
@@ -51,33 +76,33 @@ MARGEM_INFERIOR = 30
 # Montagem do tabuleiro e do estado da partida
 # ---------------------------------------------------------------------------
 
-def criar_tabuleiro(linhas, colunas):
+def criar_tabuleiro(linhas, colunas, cartas_especiais=False):
     """Monta as cartas de uma grade do tamanho pedido.
 
-    Calcula o tamanho de carta que cabe na tela, embaralha as letras e cria
-    cada carta ja com sua posicao. Devolve a lista de cartas e o tamanho
-    de carta usado (para a fonte combinar com o tamanho).
+    Calcula o tamanho de carta que cabe na tela, embaralha os simbolos e
+    cria cada carta ja com sua posicao. Se 'cartas_especiais' for True,
+    alguns pares normais sao trocados por cartas com efeito especial
+    (curinga, bonus de tempo e embaralha). Devolve a lista de cartas e o
+    tamanho de carta usado (para a fonte combinar com o tamanho).
     """
-    # Espaco que sobra na tela para colocar as cartas (tirando as margens).
     largura_disp = LARGURA_TELA - 2 * MARGEM_LATERAL
     altura_disp = ALTURA_TELA - ESPACO_TOPO - MARGEM_INFERIOR
 
-    # Acha o maior tamanho de carta quadrada que ainda cabe na grade.
     carta_por_largura = (largura_disp - (colunas - 1) * MARGEM) / colunas
     carta_por_altura = (altura_disp - (linhas - 1) * MARGEM) / linhas
     tamanho = int(min(carta_por_largura, carta_por_altura))
 
-    # Centraliza a grade na tela calculando onde a primeira carta comeca.
     largura_grade = colunas * tamanho + (colunas - 1) * MARGEM
     altura_grade = linhas * tamanho + (linhas - 1) * MARGEM
     inicio_x = (LARGURA_TELA - largura_grade) // 2
     inicio_y = ESPACO_TOPO + (altura_disp - altura_grade) // 2
 
-    # Pega so as letras necessarias para o numero de pares deste tabuleiro.
     numero_pares = (linhas * colunas) // 2
-    valores = criar_valores_embaralhados(SIMBOLOS[:numero_pares])
+    simbolos_do_nivel = montar_simbolos_do_nivel(
+        SIMBOLOS, numero_pares, SIMBOLOS_ESPECIAIS, cartas_especiais
+    )
+    valores = criar_valores_embaralhados(simbolos_do_nivel)
 
-    # Cria cada carta como um dicionario, ja na sua posicao na tela.
     tabuleiro = []
     for indice, valor in enumerate(valores):
         linha, coluna = indice_para_coordenada(indice, colunas)
@@ -90,13 +115,14 @@ def criar_tabuleiro(linhas, colunas):
             "rect": pygame.Rect(x, y, tamanho, tamanho),
             "revelada": False,
             "encontrada": False,
+            "anim_inicio": None,  # quando != None, a carta esta "virando"
         }
         tabuleiro.append(carta)
 
     return tabuleiro, tamanho
 
 
-def estado_inicial(nivel=NIVEL_PADRAO):
+def estado_inicial(nivel=NIVEL_PADRAO, modo="1p", cartas_especiais=False):
     """Cria o "estado" da partida: um dicionario que guarda tudo que muda
     durante o jogo (cartas, pontos, tempo, situacao atual etc.).
 
@@ -104,12 +130,14 @@ def estado_inicial(nivel=NIVEL_PADRAO):
     um estado novo. O jogo comeca na situacao "menu".
     """
     cfg = NIVEIS[nivel]
-    tabuleiro, tamanho = criar_tabuleiro(cfg["linhas"], cfg["colunas"])
+    tabuleiro, tamanho = criar_tabuleiro(cfg["linhas"], cfg["colunas"], cartas_especiais)
 
     return {
         "tabuleiro": tabuleiro,
         "tamanho_carta": tamanho,
         "nivel": nivel,
+        "modo": modo,                  # "1p" ou "2p"
+        "cartas_especiais": cartas_especiais,
         "numero_pares": (cfg["linhas"] * cfg["colunas"]) // 2,
         "tempo_limite": cfg["tempo"],
         "peso": cfg["peso"],
@@ -125,6 +153,20 @@ def estado_inicial(nivel=NIVEL_PADRAO):
         "situacao": "menu",      # "menu", "jogando", "pausado", "vitoria", "derrota"
         "tempo_vitoria": 0,      # segundos restantes no momento da vitória
         "novo_recorde": False,   # True se esta partida bateu o recorde
+        "ultimo_resultado": None,  # "acerto"/"erro" na última jogada (para o som)
+        # --- combo e dica (só no modo 1 jogador) ---
+        "combo": 0,
+        "dicas_usadas": 0,
+        "dica_expira": None,
+        "dica_indices": [],
+        "precisao": 0,
+        "conquistas_novas": set(),
+        "pedindo_nome": False,
+        "entrada_nome": "",
+        # --- modo 2 jogadores ---
+        "jogador_atual": 1,
+        "pontos_jogadores": [0, 0],
+        "tentativas_jogadores": [0, 0],
     }
 
 
@@ -134,13 +176,13 @@ def _fonte_carta(tamanho):
     return pygame.font.SysFont("arial", max(20, int(tamanho * 0.55)), bold=True)
 
 
-def iniciar_partida(nivel):
+def iniciar_partida(nivel, modo="1p", cartas_especiais=False):
     """Comeca de fato uma partida no nivel escolhido.
 
     Cria um estado novo, marca a situacao como "jogando" e zera o relogio.
     Devolve tambem a fonte das cartas, que depende do tamanho da grade.
     """
-    estado = estado_inicial(nivel)
+    estado = estado_inicial(nivel, modo, cartas_especiais)
     estado["situacao"] = "jogando"
     estado["inicio"] = pygame.time.get_ticks()
     return estado, _fonte_carta(estado["tamanho_carta"])
@@ -181,22 +223,70 @@ def retomar(estado):
 def tratar_clique(estado, posicao_mouse):
     """Vira a carta que o jogador clicou.
 
-    Ignora o clique se ja existem duas cartas viradas (esperando comparacao)
-    ou se a carta clicada ja esta aberta. So vira cartas validas.
+    Ignora o clique se ja existem duas cartas viradas (esperando comparacao),
+    se uma dica esta sendo mostrada ou se a carta clicada ja esta aberta.
     """
-    if estado["erro_em"] is not None:
+    if estado["erro_em"] is not None or estado["dica_expira"] is not None:
         return
     if len(estado["selecionadas"]) >= 2:
         return
 
-    # Procura entre as cartas qual delas o clique acertou.
     for indice, carta in enumerate(estado["tabuleiro"]):
         if carta["rect"].collidepoint(posicao_mouse):
             if carta["revelada"] or carta["encontrada"]:
                 return
             carta["revelada"] = True
+            carta["anim_inicio"] = pygame.time.get_ticks()
             estado["selecionadas"].append(indice)
             break
+
+
+def _aplicar_efeito_especial(estado, valor):
+    """Aplica o efeito de uma carta especial quando o par dela e encontrado.
+
+    - Curinga: completa automaticamente outro par que ainda esta oculto.
+    - Bonus de tempo: soma alguns segundos ao tempo da partida.
+    - Embaralha: sorteia uma nova posicao para os valores ainda ocultos.
+    """
+    if valor == SIMBOLO_CURINGA:
+        # Monta a lista dos valores que ainda estao ocultos (sem contar as
+        # proprias cartas especiais), para sortear um par para completar.
+        ocultos = []
+        for carta in estado["tabuleiro"]:
+            if not carta["encontrada"] and carta["valor"] not in SIMBOLOS_ESPECIAIS:
+                ocultos.append(carta["valor"])
+
+        alvo = completar_par_bonus(ocultos)
+        if alvo is not None:
+            completados = 0
+            for carta in estado["tabuleiro"]:
+                if completados >= 2:
+                    break
+                if not carta["encontrada"] and carta["valor"] == alvo:
+                    carta["encontrada"] = True
+                    carta["revelada"] = True
+                    completados += 1
+            estado["pares_encontrados"].add(alvo)
+
+    elif valor == SIMBOLO_BONUS_TEMPO:
+        estado["tempo_limite"] += SEGUNDOS_BONUS_CARTA
+
+    elif valor == SIMBOLO_EMBARALHA:
+        # Junta os indices e os valores de todas as cartas ainda ocultas,
+        # sorteia uma ordem nova para os valores e devolve cada um para o
+        # tabuleiro, na mesma posicao da lista (por isso os indices e os
+        # valores embaralhados precisam estar alinhados).
+        indices_ocultos = []
+        valores_ocultos = []
+        for indice, carta in enumerate(estado["tabuleiro"]):
+            if not carta["encontrada"] and not carta["revelada"]:
+                indices_ocultos.append(indice)
+                valores_ocultos.append(carta["valor"])
+
+        novos_valores = reembaralhar_ocultas(valores_ocultos)
+        for posicao in range(len(indices_ocultos)):
+            indice = indices_ocultos[posicao]
+            estado["tabuleiro"][indice]["valor"] = novos_valores[posicao]
 
 
 def avaliar_jogada(estado):
@@ -204,28 +294,56 @@ def avaliar_jogada(estado):
 
     Se forem iguais, viram um par (somam pontos e ficam abertas) e, se foi
     o ultimo par, a partida e vencida. Se forem diferentes, marca o momento
-    para depois esconde-las de novo.
+    para depois esconde-las de novo. No modo 2 jogadores, tambem cuida da
+    pontuacao de cada jogador e da troca de turno.
     """
+    estado["ultimo_resultado"] = None
     if len(estado["selecionadas"]) != 2 or estado["erro_em"] is not None:
         return
 
     estado["tentativas"] += 1
+    if estado["modo"] == "2p":
+        estado["tentativas_jogadores"][estado["jogador_atual"] - 1] += 1
+
     indice_a, indice_b = estado["selecionadas"]
     carta_a = estado["tabuleiro"][indice_a]
     carta_b = estado["tabuleiro"][indice_b]
 
     if verificar_par(carta_a["valor"], carta_b["valor"]):
+        valor_par = carta_a["valor"]
         carta_a["encontrada"] = True
         carta_b["encontrada"] = True
-        estado["pares_encontrados"].add(carta_a["valor"])
-        estado["pontos"] = calcular_pontos(estado["pontos"], PONTOS_POR_PAR * estado["peso"])
+        estado["pares_encontrados"].add(valor_par)
         estado["selecionadas"] = []
+        estado["ultimo_resultado"] = "acerto"
+
+        pontos_par = PONTOS_POR_PAR * estado["peso"]
+
+        if estado["modo"] == "1p":
+            estado["combo"] = atualizar_combo(estado["combo"], acertou=True)
+            multiplicador = calcular_multiplicador_combo(estado["combo"])
+            pontos_par = int(pontos_par * multiplicador)
+            estado["pontos"] = calcular_pontos(estado["pontos"], pontos_par)
+            _aplicar_efeito_especial(estado, valor_par)
+        else:
+            jogador = estado["jogador_atual"]
+            estado["pontos_jogadores"][jogador - 1] += pontos_par
+            _aplicar_efeito_especial(estado, valor_par)
 
         if todos_pares_encontrados(estado["pares_encontrados"], estado["numero_pares"]):
             estado["situacao"] = "vitoria"
             estado["tempo_vitoria"] = tempo_restante(estado)
     else:
         estado["erro_em"] = pygame.time.get_ticks()
+        estado["ultimo_resultado"] = "erro"
+
+        if estado["modo"] == "1p":
+            estado["combo"] = atualizar_combo(estado["combo"], acertou=False)
+        else:
+            if estado["jogador_atual"] == 1:
+                estado["jogador_atual"] = 2
+            else:
+                estado["jogador_atual"] = 1
 
 
 def atualizar_erro(estado):
@@ -243,6 +361,61 @@ def atualizar_erro(estado):
         estado["erro_em"] = None
 
 
+def usar_dica(estado):
+    """Revela rapidamente um par ainda oculto, custando alguns pontos.
+
+    Só funciona no modo 1 jogador, enquanto não há cartas viradas esperando
+    comparação e enquanto ainda houver dicas disponíveis nesta partida.
+    """
+    if estado["modo"] != "1p":
+        return
+    if estado["dicas_usadas"] >= DICAS_MAXIMAS:
+        return
+    if len(estado["selecionadas"]) > 0 or estado["erro_em"] is not None or estado["dica_expira"] is not None:
+        return
+
+    indices_ocultos = []
+    valores_ocultos = []
+    for indice, carta in enumerate(estado["tabuleiro"]):
+        if not carta["encontrada"] and not carta["revelada"]:
+            indices_ocultos.append(indice)
+            valores_ocultos.append(carta["valor"])
+
+    alvo = completar_par_bonus(valores_ocultos)
+    if alvo is None:
+        return
+
+    # Procura, entre as cartas ocultas, as duas que tem o valor sorteado.
+    indices_da_dica = []
+    for indice in indices_ocultos:
+        if len(indices_da_dica) >= 2:
+            break
+        if estado["tabuleiro"][indice]["valor"] == alvo:
+            indices_da_dica.append(indice)
+
+    agora = pygame.time.get_ticks()
+    for indice in indices_da_dica:
+        estado["tabuleiro"][indice]["revelada"] = True
+        estado["tabuleiro"][indice]["anim_inicio"] = agora
+
+    estado["dicas_usadas"] += 1
+    estado["pontos"] = max(0, estado["pontos"] - CUSTO_DICA)
+    estado["dica_expira"] = agora + DURACAO_DICA_MS
+    estado["dica_indices"] = indices_da_dica
+
+
+def atualizar_dica(estado):
+    """Esconde de novo as cartas reveladas pela dica, quando o tempo dela acaba."""
+    if estado["dica_expira"] is None:
+        return
+    if pygame.time.get_ticks() >= estado["dica_expira"]:
+        for indice in estado["dica_indices"]:
+            if not estado["tabuleiro"][indice]["encontrada"]:
+                estado["tabuleiro"][indice]["revelada"] = False
+        estado["dica_expira"] = None
+        estado["dica_indices"] = []
+
+
 # ---------------------------------------------------------------------------
 # Pecas reutilizadas no desenho das telas
 # ---------------------------------------------------------------------------
@@ -256,17 +429,20 @@ def _overlay(tela, alpha=180):
     tela.blit(fundo, (0, 0))
 
 
-def _desenhar_botao(tela, texto, fonte, rect, mouse_pos):
+def _desenhar_botao(tela, texto, fonte, rect, mouse_pos, tema):
     """Desenha um botao na tela e muda a cor quando o mouse passa por cima.
 
     Devolve True se o mouse estiver em cima do botao, o que ajuda a saber
     se ele foi clicado.
     """
     hover = rect.collidepoint(mouse_pos)
-    cor_fundo = BOTAO_HOVER if hover else BOTAO_FUNDO
+    if hover:
+        cor_fundo = tema["botao_hover"]
+    else:
+        cor_fundo = tema["botao_fundo"]
     pygame.draw.rect(tela, cor_fundo, rect, border_radius=10)
-    pygame.draw.rect(tela, BOTAO_BORDA, rect, width=2, border_radius=10)
-    desenhar_texto(tela, texto, fonte, TEXTO_CLARO, rect.center)
+    pygame.draw.rect(tela, tema["botao_borda"], rect, width=2, border_radius=10)
+    desenhar_texto(tela, texto, fonte, tema["texto_claro"], rect.center)
     return hover
 
 
@@ -291,11 +467,13 @@ def posicoes_botoes_menu():
     x_dir = cx + 100
 
     centros = {
-        "facil":   (x_esq, 250),
-        "medio":   (x_dir, 250),
-        "dificil": (x_esq, 330),
-        "extremo": (x_dir, 330),
-        "sair":    (cx, 420),
+        "facil":   (x_esq, 230),
+        "medio":   (x_dir, 230),
+        "dificil": (x_esq, 300),
+        "extremo": (x_dir, 300),
+        "modo":      (x_esq, 380),
+        "especiais": (x_dir, 380),
+        "sair":    (cx, 460),
     }
 
     rects = {}
@@ -306,34 +484,49 @@ def posicoes_botoes_menu():
     return rects
 
 
-def desenhar_menu(tela, recordes, fonte_titulo, fonte_botao, fonte_hud, fonte_rec, mouse_pos):
-    """Desenha o menu inicial: titulo, botoes de dificuldade e botao de sair.
+def desenhar_menu(tela, recordes, fonte_titulo, fonte_botao, fonte_hud, fonte_rec,
+                   mouse_pos, tema, modo_selecionado, especiais_selecionado):
+    """Desenha o menu inicial: titulo, botoes de dificuldade, opcoes de modo
+    de jogo e cartas especiais, e botao de sair.
 
     Tambem devolve as areas dos botoes (vindas de posicoes_botoes_menu),
     caso o loop principal precise delas.
     """
-    tela.fill(FUNDO)
+    tela.fill(tema["fundo"])
 
-    desenhar_texto(tela, "MemoryPy", fonte_titulo, AMARELO,
-                   (LARGURA_TELA // 2, 100))
-    desenhar_texto(tela, "Escolha a dificuldade", fonte_hud, CINZA,
-                   (LARGURA_TELA // 2, 150))
+    desenhar_texto(tela, "MemoryPy", fonte_titulo, tema["amarelo"],
+                   (LARGURA_TELA // 2, 70))
+    desenhar_texto(tela, "Escolha a dificuldade", fonte_hud, tema["cinza"],
+                   (LARGURA_TELA // 2, 120))
 
     rects = posicoes_botoes_menu()
 
-    # Desenha um botao para cada nivel, com o recorde daquele nivel embaixo.
     for nivel in NIVEIS:
         rect = rects[nivel]
         cfg = NIVEIS[nivel]
-        _desenhar_botao(tela, f"{cfg['rotulo']} ({cfg['tempo']}s)", fonte_botao, rect, mouse_pos)
+        _desenhar_botao(tela, f"{cfg['rotulo']} ({cfg['tempo']}s)", fonte_botao, rect, mouse_pos, tema)
         rec = recordes.get(nivel, 0)
-        desenhar_texto(tela, f"Recorde: {rec}", fonte_rec, CINZA,
+        desenhar_texto(tela, f"Recorde: {rec}", fonte_rec, tema["cinza"],
                        (rect.centerx, rect.centery + 36))
 
-    _desenhar_botao(tela, "Sair", fonte_botao, rects["sair"], mouse_pos)
+    if modo_selecionado == "1p":
+        rotulo_modo = "Modo: 1 Jogador"
+    else:
+        rotulo_modo = "Modo: 2 Jogadores"
+    _desenhar_botao(tela, rotulo_modo, fonte_botao, rects["modo"], mouse_pos, tema)
 
-    desenhar_texto(tela, "Durante o jogo:  P pausa   R reinicia   ESC sai",
-                   fonte_hud, CINZA, (LARGURA_TELA // 2, 505))
+    if especiais_selecionado:
+        rotulo_especiais = "Especiais: Ligadas"
+    else:
+        rotulo_especiais = "Especiais: Desligadas"
+    _desenhar_botao(tela, rotulo_especiais, fonte_botao, rects["especiais"], mouse_pos, tema)
+
+    _desenhar_botao(tela, "Sair", fonte_botao, rects["sair"], mouse_pos, tema)
+
+    desenhar_texto(tela, "Durante o jogo:  P pausa   R reinicia   H dica   ESC sai",
+                   fonte_hud, tema["cinza"], (LARGURA_TELA // 2, 525))
+    desenhar_texto(tela, "T troca o tema   S liga/desliga o som",
+                   fonte_hud, tema["cinza"], (LARGURA_TELA // 2, 550))
 
     return rects
 
@@ -360,44 +553,66 @@ def posicoes_botoes_pausa():
     return rects
 
 
-def desenhar_pausa(tela, fonte_titulo, fonte_botao, fonte_hud, mouse_pos):
+def desenhar_pausa(tela, fonte_titulo, fonte_botao, fonte_hud, mouse_pos, tema):
     """Desenha a tela de pausa com os botoes Retomar, Menu e Sair.
 
     Tambem devolve as areas dos botoes (vindas de posicoes_botoes_pausa).
     """
     _overlay(tela, alpha=200)
 
-    desenhar_texto(tela, "Pausado", fonte_titulo, AMARELO,
+    desenhar_texto(tela, "Pausado", fonte_titulo, tema["amarelo"],
                    (LARGURA_TELA // 2, ALTURA_TELA // 2 - 120))
 
     rects = posicoes_botoes_pausa()
-    _desenhar_botao(tela, "Retomar (P)", fonte_botao, rects["retomar"], mouse_pos)
-    _desenhar_botao(tela, "Menu", fonte_botao, rects["menu"], mouse_pos)
-    _desenhar_botao(tela, "Sair", fonte_botao, rects["sair"], mouse_pos)
+    _desenhar_botao(tela, "Retomar (P)", fonte_botao, rects["retomar"], mouse_pos, tema)
+    _desenhar_botao(tela, "Menu", fonte_botao, rects["menu"], mouse_pos, tema)
+    _desenhar_botao(tela, "Sair", fonte_botao, rects["sair"], mouse_pos, tema)
 
     return rects
 
 
-def desenhar_placar(tela, estado, recorde, fonte_hud):
+def desenhar_placar(tela, estado, recorde, fonte_hud, tema):
     """Mostra na faixa de cima as informacoes da partida: tentativas,
-    pontos, tempo restante, recorde do nivel e os atalhos de teclado."""
-    desenhar_texto(tela, f"Tentativas: {estado['tentativas']}", fonte_hud, TEXTO_CLARO, (120, 30))
-    desenhar_texto(tela, f"Pontos: {estado['pontos']}", fonte_hud, TEXTO_CLARO, (340, 30))
-    desenhar_texto(tela, f"Tempo: {tempo_restante(estado)}s", fonte_hud, TEXTO_CLARO, (520, 30))
-    desenhar_texto(tela, f"Recorde: {recorde}", fonte_hud, TEXTO_CLARO, (690, 30))
+    pontos, tempo restante, recorde do nivel, combo e dicas (modo 1 jogador)."""
+    desenhar_texto(tela, f"Tentativas: {estado['tentativas']}", fonte_hud, tema["texto_claro"], (110, 30))
+    desenhar_texto(tela, f"Pontos: {estado['pontos']}", fonte_hud, tema["texto_claro"], (310, 30))
+    desenhar_texto(tela, f"Tempo: {tempo_restante(estado)}s", fonte_hud, tema["texto_claro"], (490, 30))
+    desenhar_texto(tela, f"Recorde: {recorde}", fonte_hud, tema["texto_claro"], (650, 30))
 
     rotulo = NIVEIS[estado["nivel"]]["rotulo"]
-    desenhar_texto(tela, f"Nivel: {rotulo}    P: pausar    R: reiniciar    ESC: sair",
-                   fonte_hud, CINZA, (LARGURA_TELA // 2, 70))
+    multiplicador = calcular_multiplicador_combo(estado["combo"])
+    dicas_restantes = DICAS_MAXIMAS - estado["dicas_usadas"]
+    extra = f"Combo: x{multiplicador:.1f}    Dicas: {dicas_restantes}/{DICAS_MAXIMAS}"
+    desenhar_texto(tela, f"Nivel: {rotulo}    {extra}",
+                   fonte_hud, tema["cinza"], (LARGURA_TELA // 2, 70))
 
 
-def desenhar_fim(tela, estado, fonte_fim):
+def desenhar_placar_2p(tela, estado, fonte_hud, tema):
+    """Mostra o placar do modo 2 jogadores: pontos de cada jogador, de
+    quem é a vez e o tempo restante da partida."""
+    if estado["jogador_atual"] == 1:
+        cor_p1 = tema["amarelo"]
+        cor_p2 = tema["texto_claro"]
+        vez = "Vez do Jogador 1"
+    else:
+        cor_p1 = tema["texto_claro"]
+        cor_p2 = tema["amarelo"]
+        vez = "Vez do Jogador 2"
+
+    desenhar_texto(tela, f"Jogador 1: {estado['pontos_jogadores'][0]} pts", fonte_hud, cor_p1, (160, 30))
+    desenhar_texto(tela, f"Jogador 2: {estado['pontos_jogadores'][1]} pts", fonte_hud, cor_p2, (640, 30))
+    desenhar_texto(tela, f"Tempo: {tempo_restante(estado)}s", fonte_hud, tema["texto_claro"], (400, 30))
+
+    desenhar_texto(tela, vez, fonte_hud, tema["cinza"], (LARGURA_TELA // 2, 70))
+
+
+def desenhar_fim(tela, estado, fonte_fim, tema):
     """Desenha a tela de derrota (quando o tempo acaba).
     A tela de vitoria fica no arquivo tela_vitoria.py."""
     _overlay(tela)
-    desenhar_texto(tela, "Tempo esgotado!", fonte_fim, CARTA_ENCONTRADA,
+    desenhar_texto(tela, "Tempo esgotado!", fonte_fim, tema["carta_encontrada"],
                    (LARGURA_TELA // 2, ALTURA_TELA // 2 - 20))
-    desenhar_texto(tela, "R: jogar de novo    M: menu", fonte_fim, TEXTO_CLARO,
+    desenhar_texto(tela, "R: jogar de novo    M: menu", fonte_fim, tema["texto_claro"],
                    (LARGURA_TELA // 2, ALTURA_TELA // 2 + 40))
 
 
@@ -417,31 +632,60 @@ def executar_jogo():
     pygame.display.set_caption(TITULO_JOGO)
     relogio = pygame.time.Clock()
 
-    # Cria as fontes uma unica vez (e mais rapido do que criar a cada quadro).
-    fonte_hud    = pygame.font.SysFont("arial", 22)
+    audio.inicializar()
+
+    fonte_hud    = pygame.font.SysFont("arial", 20)
     fonte_fim    = pygame.font.SysFont("arial", 40, bold=True)
-    fonte_titulo = pygame.font.SysFont("arial", 64, bold=True)
-    fonte_botao  = pygame.font.SysFont("arial", 24, bold=True)
+    fonte_titulo = pygame.font.SysFont("arial", 56, bold=True)
+    fonte_botao  = pygame.font.SysFont("arial", 22, bold=True)
     fonte_rec    = pygame.font.SysFont("arial", 16)
 
-    # Carrega os recordes salvos e prepara o estado inicial (no menu).
+    # Carrega os dados salvos (recordes, estatisticas, ranking, conquistas e
+    # preferencias) e prepara o estado inicial (no menu).
     recordes = carregar_recordes(CAMINHO_RECORDE)
+    estatisticas = carregar_estatisticas(CAMINHO_RECORDE)
+    ranking = carregar_ranking(CAMINHO_RECORDE)
+    conquistas = carregar_conquistas(CAMINHO_RECORDE)
+    preferencias = carregar_preferencias(CAMINHO_RECORDE)
+
+    modo_selecionado = "1p"
+    especiais_selecionado = False
+
     estado = estado_inicial(NIVEL_PADRAO)
     fonte_carta = _fonte_carta(estado["tamanho_carta"])
 
     rodando = True
     while rodando:
-        relogio.tick(FPS)                  # segura o jogo na velocidade certa
+        relogio.tick(FPS)
         mouse_pos = pygame.mouse.get_pos()
-        situacao = estado["situacao"]      # em que tela/momento o jogo esta
+        situacao = estado["situacao"]
+        tema = TEMAS[preferencias["tema"]]
 
         # --- Passo 1: ler o que o jogador fez (teclado e mouse) ---
         for evento in pygame.event.get():
             if evento.type == pygame.QUIT:
                 rodando = False
 
-            # Teclas: ESC (pausa/sai), P (pausa), R (reinicia), M (menu).
             elif evento.type == pygame.KEYDOWN:
+
+                # Enquanto o jogo pede o nome para o ranking, as teclas
+                # servem só para digitar (letras, apagar e confirmar).
+                if estado.get("pedindo_nome"):
+                    if evento.key == pygame.K_RETURN:
+                        nome = estado["entrada_nome"].strip() or "Jogador"
+                        nivel = estado["nivel"]
+                        ranking[nivel] = atualizar_ranking(
+                            ranking.get(nivel, []), nome, estado["pontos"], TAMANHO_RANKING
+                        )
+                        salvar_ranking(CAMINHO_RECORDE, ranking)
+                        estado["pedindo_nome"] = False
+                    elif evento.key == pygame.K_BACKSPACE:
+                        estado["entrada_nome"] = estado["entrada_nome"][:-1]
+                    elif evento.unicode and evento.unicode.isprintable():
+                        if len(estado["entrada_nome"]) < TAMANHO_MAXIMO_NOME:
+                            estado["entrada_nome"] += evento.unicode
+                    continue
+
                 if evento.key == pygame.K_ESCAPE:
                     if situacao == "jogando":
                         pausar(estado)
@@ -454,32 +698,58 @@ def executar_jogo():
                 elif evento.key == pygame.K_p and situacao == "pausado":
                     retomar(estado)
 
+                elif evento.key == pygame.K_h and situacao == "jogando":
+                    usar_dica(estado)
+
+                elif evento.key == pygame.K_t:
+                    if preferencias["tema"] == "escuro":
+                        preferencias["tema"] = "claro"
+                    else:
+                        preferencias["tema"] = "escuro"
+                    salvar_preferencias(CAMINHO_RECORDE, preferencias)
+
+                elif evento.key == pygame.K_s:
+                    preferencias["som_ativado"] = not preferencias["som_ativado"]
+                    salvar_preferencias(CAMINHO_RECORDE, preferencias)
+                    if not preferencias["som_ativado"]:
+                        audio.parar_musica_fundo()
+
                 elif evento.key == pygame.K_r and situacao in ("jogando", "vitoria", "derrota"):
-                    estado, fonte_carta = iniciar_partida(estado["nivel"])
+                    estado, fonte_carta = iniciar_partida(
+                        estado["nivel"], estado["modo"], estado["cartas_especiais"]
+                    )
 
                 elif evento.key == pygame.K_m and situacao in ("vitoria", "derrota", "pausado"):
-                    estado = estado_inicial(NIVEL_PADRAO)   # volta para o menu
+                    estado = estado_inicial(NIVEL_PADRAO)
+                    audio.parar_musica_fundo()
 
-            # Clique do mouse: o efeito depende da tela em que estamos.
             elif evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:
 
                 if situacao == "menu":
-                    # Descobre em qual botao do menu o jogador clicou.
                     rects = posicoes_botoes_menu()
                     for nivel in NIVEIS:
                         if rects[nivel].collidepoint(mouse_pos):
-                            estado, fonte_carta = iniciar_partida(nivel)
+                            estado, fonte_carta = iniciar_partida(
+                                nivel, modo_selecionado, especiais_selecionado
+                            )
                             break
+                    if rects["modo"].collidepoint(mouse_pos):
+                        if modo_selecionado == "1p":
+                            modo_selecionado = "2p"
+                        else:
+                            modo_selecionado = "1p"
+                    if rects["especiais"].collidepoint(mouse_pos):
+                        especiais_selecionado = not especiais_selecionado
                     if rects["sair"].collidepoint(mouse_pos):
                         rodando = False
 
                 elif situacao == "pausado":
-                    # Descobre qual botao da pausa o jogador clicou.
                     rects = posicoes_botoes_pausa()
                     if rects["retomar"].collidepoint(mouse_pos):
                         retomar(estado)
                     elif rects["menu"].collidepoint(mouse_pos):
                         estado = estado_inicial(NIVEL_PADRAO)
+                        audio.parar_musica_fundo()
                     elif rects["sair"].collidepoint(mouse_pos):
                         rodando = False
 
@@ -488,50 +758,114 @@ def executar_jogo():
 
         # --- Passo 2: atualizar a partida (so quando esta jogando) ---
         if situacao == "jogando":
-            avaliar_jogada(estado)   # confere se as duas cartas formam par
-            atualizar_erro(estado)   # esconde de novo as cartas erradas
+            audio.tocar_musica_fundo(preferencias["som_ativado"])
 
-            # Se o tempo zerou e ainda nao venceu, o jogador perde.
-            if tempo_restante(estado) <= 0:
+            avaliar_jogada(estado)
+            atualizar_erro(estado)
+            atualizar_dica(estado)
+
+            if estado["ultimo_resultado"] == "acerto":
+                audio.tocar_efeito("acerto", preferencias["som_ativado"])
+            elif estado["ultimo_resultado"] == "erro":
+                audio.tocar_efeito("erro", preferencias["som_ativado"])
+
+            if tempo_restante(estado) <= 0 and estado["situacao"] == "jogando":
                 estado["situacao"] = "derrota"
 
-            # Se a jogada acima resultou em vitoria, calcula o bonus de tempo
-            # e, se for o caso, guarda o novo recorde do nivel.
+            # Quando a partida termina (vitoria ou derrota), o bloco abaixo
+            # roda só nesse exato quadro: "situacao" foi lida antes da
+            # jogada acima, então o "if situacao == jogando" continua valido
+            # mesmo que avaliar_jogada/tempo tenha acabado de mudar o estado.
             if estado["situacao"] == "vitoria":
-                bonus = calcular_bonus_tempo(
-                    estado["tempo_vitoria"], PONTOS_POR_SEGUNDO
-                ) * estado["peso"]
-                estado["bonus_tempo"] = bonus
-                estado["pontos"] = calcular_pontos(estado["pontos"], bonus)
+                audio.tocar_efeito("vitoria", preferencias["som_ativado"])
+                audio.parar_musica_fundo()
 
-                nivel = estado["nivel"]
-                if eh_novo_recorde(estado["pontos"], recordes.get(nivel, 0)):
-                    recordes[nivel] = estado["pontos"]
-                    salvar_recordes(CAMINHO_RECORDE, recordes)
-                    estado["novo_recorde"] = True
+                if estado["modo"] == "1p":
+                    bonus = calcular_bonus_tempo(
+                        estado["tempo_vitoria"], PONTOS_POR_SEGUNDO
+                    ) * estado["peso"]
+                    estado["bonus_tempo"] = bonus
+                    estado["pontos"] = calcular_pontos(estado["pontos"], bonus)
+
+                    nivel = estado["nivel"]
+                    if eh_novo_recorde(estado["pontos"], recordes.get(nivel, 0)):
+                        recordes[nivel] = estado["pontos"]
+                        salvar_recordes(CAMINHO_RECORDE, recordes)
+                        estado["novo_recorde"] = True
+
+                    estado["precisao"] = calcular_precisao(
+                        estado["tentativas"], len(estado["pares_encontrados"])
+                    )
+
+                    stats_nivel = atualizar_estatisticas(
+                        estatisticas.get(nivel, {}), venceu=True,
+                        tentativas=estado["tentativas"], tempo_restante=estado["tempo_vitoria"],
+                    )
+                    estatisticas[nivel] = stats_nivel
+                    salvar_estatisticas(CAMINHO_RECORDE, estatisticas)
+
+                    resumo = {
+                        "tentativas": estado["tentativas"],
+                        "numero_pares": estado["numero_pares"],
+                        "tempo_restante": estado["tempo_vitoria"],
+                        "tempo_limite": estado["tempo_limite"],
+                        "nivel": nivel,
+                        "dicas_usadas": estado["dicas_usadas"],
+                        "total_partidas": stats_nivel["partidas"],
+                    }
+                    novas = verificar_conquistas(resumo, conquistas)
+                    estado["conquistas_novas"] = novas
+                    if novas:
+                        conquistas |= novas
+                        salvar_conquistas(CAMINHO_RECORDE, conquistas)
+
+                    ranking_nivel = ranking.get(nivel, [])
+                    if qualifica_para_ranking(ranking_nivel, estado["pontos"], TAMANHO_RANKING):
+                        estado["pedindo_nome"] = True
+
+            elif estado["situacao"] == "derrota":
+                audio.parar_musica_fundo()
+                if estado["modo"] == "1p":
+                    nivel = estado["nivel"]
+                    estatisticas[nivel] = atualizar_estatisticas(
+                        estatisticas.get(nivel, {}), venceu=False,
+                        tentativas=estado["tentativas"], tempo_restante=0,
+                    )
+                    salvar_estatisticas(CAMINHO_RECORDE, estatisticas)
 
         # --- Passo 3: desenhar a tela conforme o momento do jogo ---
         if situacao == "menu":
-            desenhar_menu(tela, recordes, fonte_titulo, fonte_botao, fonte_hud, fonte_rec, mouse_pos)
+            desenhar_menu(tela, recordes, fonte_titulo, fonte_botao, fonte_hud, fonte_rec,
+                          mouse_pos, tema, modo_selecionado, especiais_selecionado)
 
         else:
-            # Desenha o tabuleiro e o placar (vale para jogando/pausa/fim).
-            tela.fill(FUNDO)
+            agora = pygame.time.get_ticks()
+            tela.fill(tema["fundo"])
             for carta in estado["tabuleiro"]:
-                desenhar_carta(tela, carta, fonte_carta)
-            recorde_nivel = recordes.get(estado["nivel"], 0)
-            desenhar_placar(tela, estado, recorde_nivel, fonte_hud)
+                desenhar_carta(tela, carta, fonte_carta, tema, agora)
 
-            # Por cima do tabuleiro, mostra a tela extra conforme a situacao.
+            if estado["modo"] == "2p":
+                desenhar_placar_2p(tela, estado, fonte_hud, tema)
+            else:
+                recorde_nivel = recordes.get(estado["nivel"], 0)
+                desenhar_placar(tela, estado, recorde_nivel, fonte_hud, tema)
+
             if situacao == "pausado":
-                desenhar_pausa(tela, fonte_titulo, fonte_botao, fonte_hud, mouse_pos)
+                desenhar_pausa(tela, fonte_titulo, fonte_botao, fonte_hud, mouse_pos, tema)
             elif situacao == "vitoria":
-                desenhar_tela_vitoria(tela, estado, recorde_nivel, estado["novo_recorde"], estado["tempo_vitoria"])
+                if estado["modo"] == "2p":
+                    desenhar_tela_vitoria_2p(tela, estado)
+                else:
+                    nivel = estado["nivel"]
+                    desenhar_tela_vitoria(
+                        tela, estado, recordes.get(nivel, 0), estado["novo_recorde"],
+                        estado["tempo_vitoria"], estatisticas.get(nivel, {}),
+                        estado["conquistas_novas"], ranking.get(nivel, []),
+                        estado["entrada_nome"], estado["pedindo_nome"],
+                    )
             elif situacao == "derrota":
-                desenhar_fim(tela, estado, fonte_fim)
+                desenhar_fim(tela, estado, fonte_fim, tema)
 
-        # Mostra na tela tudo o que foi desenhado neste quadro.
         pygame.display.flip()
 
-    # Saiu do loop: fecha a janela e encerra o pygame.
     pygame.quit()

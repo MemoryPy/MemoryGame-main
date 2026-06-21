@@ -4,7 +4,10 @@ Esta pasta contem testes automatizados do projeto.
 
 ## Arquivos
 
-- `test_logica.py`: valida funcoes puras de logica em `src/funcoes.py`.
+- `test_logica.py`: valida as funcoes puras de logica em `src/funcoes.py`
+  (embaralhar, comparar par, pontuar, combo, precisao, conquistas, ranking)
+  e a leitura/escrita dos dados em `src/dados.py` (recordes, estatisticas,
+  ranking, conquistas e preferencias).
 
 ## Como executar
 
