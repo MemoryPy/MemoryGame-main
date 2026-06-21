@@ -371,7 +371,7 @@ def usar_dica(estado):
         return
     if estado["dicas_usadas"] >= DICAS_MAXIMAS:
         return
-    if estado["selecionadas"] or estado["erro_em"] is not None or estado["dica_expira"] is not None:
+    if len(estado["selecionadas"]) > 0 or estado["erro_em"] is not None or estado["dica_expira"] is not None:
         return
 
     indices_ocultos = []

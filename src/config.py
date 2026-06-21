@@ -50,7 +50,7 @@ SIMBOLOS = [
     "J", "K", "L", "M", "N", "O", "P", "Q", "R",
 ]
 
-# Cartas especiais (ativadas por opcao no menu, so no modo 1 jogador).
+# Cartas especiais (ativadas por opcao no menu, funciona nos dois modos).
 # Em vez de um par normal, alguns pares viram cartas com efeito extra.
 SIMBOLO_CURINGA = "*"        # ao formar este par, completa outro par sozinho
 SIMBOLO_BONUS_TEMPO = "+"    # ao formar este par, da segundos extras

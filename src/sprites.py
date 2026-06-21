@@ -97,7 +97,7 @@ def _progresso_animacao(carta, agora):
     return max(0.0, decorrido / DURACAO_ANIMACAO_MS)
 
 
-def desenhar_carta(tela, carta, fonte, tema, agora=None, com_icone=True):
+def desenhar_carta(tela, carta, fonte, tema, agora=None):
     """Desenha uma carta, mudando a aparencia conforme o estado dela.
 
     Sao tres situacoes possiveis:
@@ -154,7 +154,7 @@ def desenhar_carta(tela, carta, fonte, tema, agora=None, com_icone=True):
     # carta fica de frente para o jogador.
     if mostrar_simbolo and escala > 0.5:
         valor = carta["valor"]
-        if com_icone and valor in ICONES_CARTAS:
+        if valor in ICONES_CARTAS:
             forma, cor = ICONES_CARTAS[valor]
             raio = int(rect.width * 0.28)
             _desenhar_icone(tela, forma, cor, rect.center, raio)

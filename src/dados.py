@@ -30,7 +30,7 @@ def _carregar_tudo(caminho_arquivo):
 
 
 def _salvar_tudo(caminho_arquivo, dados):
-    """Grava no arquivo as quatro secoes de dados, formatadas em JSON."""
+    """Grava no arquivo as cinco secoes de dados, formatadas em JSON."""
     with open(caminho_arquivo, "w", encoding="utf-8") as arquivo:
         json.dump(dados, arquivo, ensure_ascii=False, indent=2)
 
