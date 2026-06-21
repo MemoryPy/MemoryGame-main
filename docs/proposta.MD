@@ -169,3 +169,19 @@ Caso o grupo tenha tempo após concluir o escopo mínimo, pensamos em várias id
 > dificuldade** (4×4, 4×6 e 6×6), o **bônus de pontuação pelo tempo restante** e a
 > **tela de comemoração na vitória** (com aviso de novo recorde). Os recordes
 > passaram a ser guardados **por nível** no arquivo `data/record.json`.
+>
+> **Observação (entrega final — Semana 4):** todas as ideias restantes desta
+> seção foram implementadas. Em **Jogabilidade**: modo **dois jogadores**,
+> **sistema de dica**, **combo/multiplicador** de pontos e **cartas especiais**
+> (curinga, bônus de tempo e embaralha — adaptamos a curinga para completar
+> sozinha outro par oculto, em vez de combinar com qualquer carta, para o
+> tabuleiro nunca ficar com um par "órfão" sem solução). Em **Visual e áudio**:
+> **animação de virar as cartas** e brilho ao formar par, **efeitos sonoros e
+> música de fundo** (gerados por código, sem depender de arquivos de
+> terceiros) e **temas claro/escuro**; no lugar de usar a spritesheet do
+> template (que não tinha ícones combinando com o jogo), desenhamos **ícones
+> próprios** (forma + cor) para cada carta. Em **Progressão e dados**:
+> **ranking com nome do jogador**, **estatísticas pessoais** (melhor tempo,
+> menor número de tentativas, total de partidas) e **conquistas**. Em
+> **Pontuação e feedback**: **cálculo de precisão** da partida. Detalhes de
+> cada funcionalidade estão no `README.md`.
