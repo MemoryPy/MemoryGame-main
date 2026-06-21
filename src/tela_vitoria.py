@@ -1,8 +1,9 @@
-# Este arquivo desenha a tela que aparece quando o jogador vence: um painel
-# no meio da tela mostrando os pontos, o tempo, o recorde, a precisao, as
-# estatisticas pessoais, as conquistas novas e o ranking (com campo para
-# digitar o nome, se a pontuacao entrar no top 5). E so parte visual, nao
-# tem regra de jogo aqui.
+# Este arquivo desenha as telas que aparecem quando a partida e vencida.
+# No modo 1 jogador, um painel mostra os pontos, o tempo, o recorde, a
+# precisao, as estatisticas pessoais, as conquistas novas e o ranking (com
+# campo para digitar o nome, se a pontuacao entrar no top 5). No modo 2
+# jogadores, uma tela mais simples so compara a pontuacao dos dois. E so
+# parte visual, nao tem regra de jogo aqui.
 
 import math
 

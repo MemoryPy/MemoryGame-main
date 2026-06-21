@@ -5,7 +5,7 @@ partida e outra.
 
 ## Arquivos
 
-- `record.json`: guarda os dados pessoais do jogador, em quatro partes:
+- `record.json`: guarda os dados pessoais do jogador, em cinco partes:
   - `recordes`: melhor pontuacao de cada nivel de dificuldade;
   - `estatisticas`: melhor tempo, menor numero de tentativas e total de
     partidas jogadas em cada nivel;

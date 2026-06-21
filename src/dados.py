@@ -1,16 +1,17 @@
 # Este arquivo cuida de salvar e ler os dados persistentes do jogador num
 # unico arquivo JSON: o recorde de cada nivel, as estatisticas pessoais, o
-# ranking com nomes e as conquistas desbloqueadas. Cada um tem sua propria
-# chave dentro do arquivo, para nao misturar os formatos.
+# ranking com nomes, as conquistas desbloqueadas e as preferencias (tema e
+# som). Cada um tem sua propria chave dentro do arquivo, para nao misturar
+# os formatos.
 
 import json
 
 
 def _carregar_tudo(caminho_arquivo):
-    """Le o arquivo de dados completo e devolve um dicionario com as quatro
-    secoes (recordes, estatisticas, ranking, conquistas).
+    """Le o arquivo de dados completo e devolve um dicionario com as cinco
+    secoes (recordes, estatisticas, ranking, conquistas, preferencias).
 
-    Se o arquivo ainda nao existir ou estiver estragado, devolve as quatro
+    Se o arquivo ainda nao existir ou estiver estragado, devolve as cinco
     secoes vazias em vez de quebrar o programa.
     """
     try:

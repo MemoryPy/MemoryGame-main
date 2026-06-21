@@ -38,7 +38,7 @@ O jogador escolhe entre quatro níveis no menu. Cada nível tem grade, tempo e p
 
 ### Cartas especiais (opcional)
 
-Quando a opção **"Especiais: Ligadas"** está marcada no menu (só no modo 1 jogador, ou também no 2 jogadores), três dos pares do nível são substituídos por cartas com efeito:
+Quando a opção **"Especiais: Ligadas"** está marcada no menu (funciona tanto no modo 1 jogador quanto no 2 jogadores), três dos pares do nível são substituídos por cartas com efeito:
 
 | Carta | Ícone | Efeito ao formar o par |
 |-------|-------|--------------------------|
@@ -163,7 +163,8 @@ MemoryGame-main/
 │   └── audio.py         # Efeitos sonoros e música de fundo
 ├── assets/
 │   ├── imagens/         # Spritesheet do template (não usada nas cartas, ver "Assets externos")
-│   └── sons/            # Efeitos sonoros e música, gerados por scripts/gerar_sons.py
+│   ├── sons/            # Efeitos sonoros e música, gerados por scripts/gerar_sons.py
+│   └── fontes/          # Reservada para fontes customizadas (não usada no momento)
 ├── data/                # Arquivos persistentes
 │   └── record.json      # Recordes, estatísticas, ranking e conquistas (ignorado pelo Git)
 ├── tests/               # Testes automatizados (pytest)
