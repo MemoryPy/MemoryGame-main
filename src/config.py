@@ -178,6 +178,10 @@ TEMAS = {"escuro": TEMA_ESCURO, "claro": TEMA_CLARO}
 TEMA_PADRAO = "escuro"
 
 # Nome de exibicao de cada conquista (ver verificar_conquistas em funcoes.py).
+# Margens usadas para calcular a area disponivel para o tabuleiro de cartas.
+MARGEM_LATERAL = 40
+MARGEM_INFERIOR = 30
+
 CONQUISTAS_LABELS = {
     "perfeito": "Perfeito (venceu sem errar)",
     "sobrou_tempo": "Sobrou tempo (venceu com metade do tempo ou mais)",

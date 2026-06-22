@@ -30,6 +30,8 @@ from src.config import (
     DICAS_MAXIMAS,
     DURACAO_DICA_MS,
     TEMAS,
+    MARGEM_LATERAL,
+    MARGEM_INFERIOR,
 )
 from src.funcoes import (
     montar_simbolos_do_nivel,
@@ -65,11 +67,6 @@ from src.dados import (
 )
 from src.tela_vitoria import desenhar_tela_vitoria, desenhar_tela_vitoria_2p
 from src import audio
-
-
-# Espaco em branco deixado nas bordas da area onde ficam as cartas.
-MARGEM_LATERAL = 40
-MARGEM_INFERIOR = 30
 
 
 # ---------------------------------------------------------------------------
@@ -340,10 +337,7 @@ def avaliar_jogada(estado):
         if estado["modo"] == "1p":
             estado["combo"] = atualizar_combo(estado["combo"], acertou=False)
         else:
-            if estado["jogador_atual"] == 1:
-                estado["jogador_atual"] = 2
-            else:
-                estado["jogador_atual"] = 1
+            estado["jogador_atual"] = 3 - estado["jogador_atual"]
 
 
 def atualizar_erro(estado):
@@ -702,10 +696,9 @@ def executar_jogo():
                     usar_dica(estado)
 
                 elif evento.key == pygame.K_t:
-                    if preferencias["tema"] == "escuro":
-                        preferencias["tema"] = "claro"
-                    else:
-                        preferencias["tema"] = "escuro"
+                    temas = list(TEMAS.keys())
+                    idx = temas.index(preferencias["tema"])
+                    preferencias["tema"] = temas[(idx + 1) % len(temas)]
                     salvar_preferencias(CAMINHO_RECORDE, preferencias)
 
                 elif evento.key == pygame.K_s:

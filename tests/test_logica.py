@@ -274,3 +274,32 @@ def test_salvar_e_carregar_preferencias(tmp_path):
     caminho = tmp_path / "record.json"
     salvar_preferencias(str(caminho), {"tema": "claro", "som_ativado": False})
     assert carregar_preferencias(str(caminho)) == {"tema": "claro", "som_ativado": False}
+
+
+def test_atualizar_estatisticas_primeira_partida():
+    """Na primeira partida (stats vazias), os campos são inicializados corretamente."""
+    stats = atualizar_estatisticas({}, venceu=True, tentativas=8, tempo_restante=30)
+    assert stats["partidas"] == 1
+    assert stats["vitorias"] == 1
+    assert stats["menor_tentativas"] == 8
+    assert stats["melhor_tempo"] == 30
+
+
+def test_verificar_conquistas_veterano():
+    """A conquista veterano é desbloqueada ao atingir 10 partidas jogadas."""
+    resumo = {
+        "tentativas": 20,
+        "numero_pares": 8,
+        "tempo_restante": 5,
+        "tempo_limite": 90,
+        "nivel": "facil",
+        "dicas_usadas": 1,
+        "total_partidas": 10,
+    }
+    novas = verificar_conquistas(resumo, conquistas_atuais=set())
+    assert "veterano" in novas
+
+
+def test_calcular_bonus_tempo_zero():
+    """Sem tempo restante, o bônus deve ser zero."""
+    assert calcular_bonus_tempo(0, pontos_por_segundo=2) == 0
